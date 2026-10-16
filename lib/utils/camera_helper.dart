@@ -16,6 +16,8 @@ class WebCameraHelper {
     viewType = 'webcam-view-${DateTime.now().microsecondsSinceEpoch}';
   }
 
+  bool _factoryRegistered = false;
+
   Future<bool> startCamera() async {
     if (!kIsWeb) return false;
     try {
@@ -27,19 +29,28 @@ class WebCameraHelper {
 
       mediaStream = await mediaDevices.getUserMedia({'video': true, 'audio': false});
 
-      videoElement = html.VideoElement()
-        ..autoplay = true
-        ..muted = true
-        ..srcObject = mediaStream
-        ..style.width = '100%'
-        ..style.height = '100%'
-        ..style.objectFit = 'cover'
-        ..style.transform = 'scaleX(-1)'; // mirror effect like photobooth
+      if (videoElement == null) {
+        videoElement = html.VideoElement()
+          ..autoplay = true
+          ..muted = true
+          ..setAttribute('playsinline', 'true')
+          ..srcObject = mediaStream
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..style.objectFit = 'cover'
+          ..style.transform = 'scaleX(-1)';
 
-      ui_web.platformViewRegistry.registerViewFactory(
-        viewType,
-        (int viewId) => videoElement!,
-      );
+        if (!_factoryRegistered) {
+          ui_web.platformViewRegistry.registerViewFactory(
+            viewType,
+            (int viewId) => videoElement!,
+          );
+          _factoryRegistered = true;
+        }
+      } else {
+        videoElement!.srcObject = mediaStream;
+        await videoElement!.play();
+      }
 
       isInitialized = true;
       hasPermissionError = false;
@@ -48,6 +59,33 @@ class WebCameraHelper {
       hasPermissionError = true;
       isInitialized = false;
       return false;
+    }
+  }
+
+  Future<void> resumeCamera() async {
+    if (!kIsWeb) return;
+    try {
+      if (videoElement != null) {
+        final tracks = mediaStream?.getVideoTracks() ?? [];
+        final hasLiveTrack = tracks.any((t) => t.readyState == 'live');
+
+        if (!hasLiveTrack) {
+          await startCamera();
+          return;
+        }
+
+        if (videoElement!.srcObject != mediaStream) {
+          videoElement!.srcObject = mediaStream;
+        }
+
+        await videoElement!.play();
+      } else {
+        await startCamera();
+      }
+    } catch (_) {
+      try {
+        await videoElement?.play();
+      } catch (_) {}
     }
   }
 

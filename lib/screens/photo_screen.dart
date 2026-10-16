@@ -32,7 +32,8 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
   bool _isDownloading = false;
 
   Uint8List? _capturedBytes;
-  int _selectedFilterIndex = 0; // 0: Original, 1: Dingin, 2: Hitam Putih
+  int _selectedFilterIndex = 0;
+  int _cameraKey = 0;
 
   Timer? _countdownTimer;
 
@@ -69,6 +70,54 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
         0.299, 0.587, 0.114, 0.0, 0.0,
         0.299, 0.587, 0.114, 0.0, 0.0,
         0.000, 0.000, 0.000, 1.0, 0.0,
+      ],
+    },
+    {
+      'id': 'analog',
+      'name': 'Analog',
+      'subtitle': 'Film 35mm',
+      'icon': Icons.camera_roll_outlined,
+      'matrix': const <double>[
+        1.12,  0.05, -0.05, 0.0, 12.0,
+       -0.02,  1.05,  0.02, 0.0,  6.0,
+       -0.08,  0.04,  0.88, 0.0, 22.0,
+        0.00,  0.00,  0.00, 1.0,  0.0,
+      ],
+    },
+    {
+      'id': 'retro',
+      'name': 'Retro',
+      'subtitle': 'Nostalgia 80s',
+      'icon': Icons.filter_vintage_outlined,
+      'matrix': const <double>[
+        1.18,  0.08, -0.04, 0.0, 16.0,
+        0.06,  0.98,  0.02, 0.0, 10.0,
+       -0.12,  0.04,  0.76, 0.0, 14.0,
+        0.00,  0.00,  0.00, 1.0,  0.0,
+      ],
+    },
+    {
+      'id': 'soft',
+      'name': 'Soft',
+      'subtitle': 'Pastel Glow',
+      'icon': Icons.face_retouching_natural_rounded,
+      'matrix': const <double>[
+        0.96,  0.06,  0.04, 0.0, 22.0,
+        0.03,  0.95,  0.04, 0.0, 18.0,
+        0.04,  0.04,  0.96, 0.0, 20.0,
+        0.00,  0.00,  0.00, 1.0,  0.0,
+      ],
+    },
+    {
+      'id': 'cyberpunk',
+      'name': 'Cyberpunk',
+      'subtitle': 'Neon Night',
+      'icon': Icons.electric_bolt_rounded,
+      'matrix': const <double>[
+        1.35, -0.10,  0.05, 0.0, 15.0,
+       -0.10,  1.15,  0.10, 0.0, -5.0,
+        0.10,  0.05,  1.45, 0.0, 20.0,
+        0.00,  0.00,  0.00, 1.0,  0.0,
       ],
     },
   ];
@@ -162,6 +211,14 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
       _selectedFilterIndex = 0;
       _isCountingDown = false;
       _countdownNumber = 3;
+      _cameraKey++;
+    });
+
+    _cameraHelper.resumeCamera();
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted && !_isCaptured) {
+        _cameraHelper.resumeCamera();
+      }
     });
   }
 
@@ -387,22 +444,22 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: _isCaptured
-                            ? Colors.green
-                            : (_isCountingDown ? Colors.redAccent : AppColors.primaryBlack),
-                        shape: BoxShape.circle,
+                    if (_isCaptured) ...[
+                      const Icon(
+                        Icons.check_rounded,
+                        size: 14,
+                        color: Colors.green,
                       ),
-                    ),
-                    const SizedBox(width: 8),
+                      const SizedBox(width: 5),
+                    ],
                     Text(
                       _isCaptured
                           ? 'FOTO TERSIMPAN'
-                          : (_isCountingDown ? 'MENGAMBIL FOTO...' : 'STUDIO PHOTOBOOTH'),
+                          : (_isCountingDown
+                              ? 'MENGAMBIL FOTO...'
+                              : 'STUDIO PHOTOBOOTH'),
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -412,22 +469,16 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
                     ),
                   ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-                  decoration: BoxDecoration(
-                    color: _isCaptured ? AppColors.secondaryLime : AppColors.surfaceMuted,
-                    borderRadius: BorderRadius.circular(7),
-                  ),
-                  child: Text(
-                    _isCaptured ? 'SIAP SIMPAN' : 'STANDBY',
+                if (!_isCaptured)
+                  Text(
+                    _isCountingDown ? 'COUNTDOWN' : 'STANDBY',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.7,
-                      color: AppColors.primaryBlack,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: AppColors.secondaryText,
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -646,7 +697,13 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
 
     // 2. Live Capture Mode: Direct live camera stream
     if (_cameraHelper.isInitialized) {
-      return HtmlElementView(viewType: _cameraHelper.viewType);
+      return HtmlElementView(
+        key: ValueKey('live-camera-$_cameraKey'),
+        viewType: _cameraHelper.viewType,
+        onPlatformViewCreated: (_) {
+          _cameraHelper.resumeCamera();
+        },
+      );
     }
 
     // Clean Studio Viewfinder Standby (No sample photo!)
@@ -797,12 +854,19 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
                   color: AppColors.secondaryText,
                 ),
               ),
-              Text(
-                _filters[_selectedFilterIndex]['name'],
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primaryBlack,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.secondaryLime.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  _filters[_selectedFilterIndex]['name'],
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryBlack,
+                  ),
                 ),
               ),
             ],
@@ -810,89 +874,115 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
         ),
         const SizedBox(height: 10),
 
-        // Filter cards (Original, Dingin, Hitam Putih)
-        Row(
-          children: List.generate(_filters.length, (index) {
-            final filter = _filters[index];
-            final isSelected = _selectedFilterIndex == index;
+        // Filter cards (Original, Dingin, Hitam Putih, Analog, Retro, Soft, Cyberpunk)
+        SizedBox(
+          height: 112,
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(context).copyWith(
+              dragDevices: {
+                ui.PointerDeviceKind.touch,
+                ui.PointerDeviceKind.mouse,
+                ui.PointerDeviceKind.trackpad,
+              },
+            ),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+              itemCount: _filters.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final filter = _filters[index];
+                final isSelected = _selectedFilterIndex == index;
 
-            return Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedFilterIndex = index;
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: EdgeInsets.only(
-                    left: index == 0 ? 0 : 5,
-                    right: index == _filters.length - 1 ? 0 : 5,
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isSelected ? AppColors.primaryBlack : AppColors.border,
-                      width: isSelected ? 2.0 : 1.0,
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedFilterIndex = index;
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    width: 94,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 9,
+                      horizontal: 6,
                     ),
-                    boxShadow: [
-                      if (isSelected)
-                        BoxShadow(
-                          color: AppColors.secondaryLime.withValues(alpha: 0.4),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        )
-                      else
-                        const BoxShadow(
-                          color: AppColors.cardShadow,
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.primaryBlack
+                            : AppColors.border,
+                        width: isSelected ? 2.0 : 1.0,
+                      ),
+                      boxShadow: [
+                        if (isSelected)
+                          BoxShadow(
+                            color:
+                                AppColors.secondaryLime.withValues(alpha: 0.45),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          )
+                        else
+                          const BoxShadow(
+                            color: AppColors.cardShadow,
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primaryBlack
+                                : AppColors.surfaceMuted,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            filter['icon'] as IconData,
+                            size: 18,
+                            color: isSelected
+                                ? AppColors.secondaryLime
+                                : AppColors.primaryBlack,
+                          ),
                         ),
-                    ],
+                        const SizedBox(height: 7),
+                        Text(
+                          filter['name'],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryBlack,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          filter['subtitle'],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 9.5,
+                            color: AppColors.secondaryText,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.primaryBlack
-                              : AppColors.surfaceMuted,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          filter['icon'] as IconData,
-                          size: 18,
-                          color: isSelected
-                              ? AppColors.secondaryLime
-                              : AppColors.primaryBlack,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        filter['name'],
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryBlack,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        filter['subtitle'],
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 9.5,
-                          color: AppColors.secondaryText,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }),
+                );
+              },
+            ),
+          ),
         ),
         const SizedBox(height: 22),
 

@@ -183,37 +183,79 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 1. Header Section (without stabilo dot)
-                _buildHeader(),
-                const SizedBox(height: 26),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isDesktop = constraints.maxWidth >= 840;
 
-                // 2. Hero Section (without stabilo dot)
-                _buildHeroText(),
-                const SizedBox(height: 22),
+              return Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isDesktop ? 1080 : 540,
+                  ),
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isDesktop ? 32 : 20,
+                      vertical: isDesktop ? 24 : 14,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 1. Header Section (without stabilo dot)
+                        _buildHeader(),
+                        SizedBox(height: isDesktop ? 36 : 26),
 
-                // 3. Featured Photo Preview Card with example photo in frame
-                _buildPreviewCard(),
-                const SizedBox(height: 28),
+                        // 2. Hero + Preview Section (side-by-side on desktop, vertical on mobile)
+                        if (isDesktop)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Left Column: Hero Text + Primary CTA
+                              Expanded(
+                                flex: 5,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildHeroText(isDesktop: true),
+                                    const SizedBox(height: 32),
+                                    _buildPrimaryCTA(),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 48),
+                              // Right Column: Featured Photo Preview Card
+                              Expanded(
+                                flex: 5,
+                                child: _buildPreviewCard(),
+                              ),
+                            ],
+                          )
+                        else ...[
+                          _buildHeroText(isDesktop: false),
+                          const SizedBox(height: 22),
+                          _buildPreviewCard(),
+                        ],
+                        SizedBox(height: isDesktop ? 44 : 28),
 
-                // 4. Preparation & Three-Step Guide
-                _buildStepSection(),
-                const SizedBox(height: 28),
+                        // 3. Preparation & Three-Step Guide (side-by-side on desktop, vertical on mobile)
+                        _buildStepSection(isDesktop: isDesktop),
+                        SizedBox(height: isDesktop ? 36 : 28),
 
-                // 5. Primary Call to Action Button
-                _buildPrimaryCTA(),
-                const SizedBox(height: 20),
+                        // 4. Primary CTA for mobile (desktop has CTA in hero row)
+                        if (!isDesktop) ...[
+                          _buildPrimaryCTA(),
+                          const SizedBox(height: 20),
+                        ],
 
-                // 6. Subtle Footer
-                _buildFooter(),
-                const SizedBox(height: 12),
-              ],
-            ),
+                        // 5. Subtle Footer
+                        _buildFooter(),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -249,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Padding(
-                  padding: const EdgeInsets.all(4.5),
+                  padding: const EdgeInsets.all(2.0),
                   child: Image.asset(
                     'assets/logo/MZP.png',
                     fit: BoxFit.contain,
@@ -317,7 +359,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildHeroText() {
+  Widget _buildHeroText({bool isDesktop = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -325,32 +367,32 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         Text(
           'YOUR PERSONAL PHOTOBOOTH',
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 11.5,
+            fontSize: isDesktop ? 13 : 11.5,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.6,
             color: AppColors.secondaryText,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: isDesktop ? 16 : 12),
 
         // Main Heading
         Text(
           'Your moment,\nyour frame.',
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 34,
+            fontSize: isDesktop ? 44 : 34,
             height: 1.12,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.6,
             color: AppColors.primaryBlack,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: isDesktop ? 16 : 12),
 
         // Indonesian Supporting Text
         Text(
           'Abadikan momenmu, pilih gaya favoritmu, dan simpan hasilnya.',
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 14.5,
+            fontSize: isDesktop ? 16 : 14.5,
             height: 1.5,
             color: AppColors.secondaryText,
             fontWeight: FontWeight.w400,
@@ -389,27 +431,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primaryBlack,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'MZ PHOTOBOOTH LAB',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.3,
-                        color: AppColors.primaryBlack,
-                      ),
-                    ),
-                  ],
+                Text(
+                  'MZ PHOTOBOOTH LAB',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.3,
+                    color: AppColors.primaryBlack,
+                  ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -528,73 +557,63 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
         ),
 
-          // Bottom Frame Selector
+          // Bottom Frame Selector (Centered 01, 02, 03)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Pilihan Frame',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-                Row(
-                  children: List.generate(_frameAssets.length, (index) {
-                    final isActive = _activePreviewIndex == index;
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _activePreviewIndex = index;
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOutCubic,
-                        margin: const EdgeInsets.only(left: 7),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(_frameAssets.length, (index) {
+                  final isActive = _activePreviewIndex == index;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _activePreviewIndex = index;
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      margin: EdgeInsets.only(left: index == 0 ? 0 : 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? AppColors.primaryBlack
+                            : AppColors.surfaceMuted,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
                           color: isActive
                               ? AppColors.primaryBlack
-                              : AppColors.surfaceMuted,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: isActive
-                                ? AppColors.primaryBlack
-                                : AppColors.border,
-                          ),
-                          boxShadow: isActive
-                              ? [
-                                  BoxShadow(
-                                    color: AppColors.primaryBlack
-                                        .withValues(alpha: 0.2),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                              : null,
+                              : AppColors.border,
                         ),
-                        child: Text(
-                          '0${index + 1}',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.bold,
-                            color: isActive
-                                ? AppColors.secondaryLime
-                                : AppColors.secondaryText,
-                          ),
+                        boxShadow: isActive
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.primaryBlack
+                                      .withValues(alpha: 0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Text(
+                        '0${index + 1}',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: isActive
+                              ? AppColors.secondaryLime
+                              : AppColors.secondaryText,
                         ),
                       ),
-                    );
-                  }),
-                ),
-              ],
+                    ),
+                  );
+                }),
+              ),
             ),
           ),
         ],
@@ -602,7 +621,27 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildStepSection() {
+  Widget _buildStepSection({bool isDesktop = false}) {
+    final step1 = _buildStepCard(
+      stepNumber: '01',
+      title: 'Pilih Frame',
+      description: 'Tentukan desain favoritmu.',
+      icon: Icons.layers_outlined,
+      isHighlight: true,
+    );
+    final step2 = _buildStepCard(
+      stepNumber: '02',
+      title: 'Ambil Foto',
+      description: 'Gunakan kamera depan atau belakang.',
+      icon: Icons.camera_alt_outlined,
+    );
+    final step3 = _buildStepCard(
+      stepNumber: '03',
+      title: 'Simpan Hasil',
+      description: 'Pilih filter dan unduh fotomu.',
+      icon: Icons.file_download_outlined,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -610,7 +649,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         Text(
           'Siap untuk berfoto?',
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 22,
+            fontSize: isDesktop ? 26 : 22,
             fontWeight: FontWeight.bold,
             letterSpacing: -0.3,
             color: AppColors.primaryBlack,
@@ -622,34 +661,36 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         Text(
           'Tiga langkah sederhana untuk hasil yang berkesan.',
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 13.5,
+            fontSize: isDesktop ? 14.5 : 13.5,
             color: AppColors.secondaryText,
           ),
         ),
-        const SizedBox(height: 18),
+        SizedBox(height: isDesktop ? 22 : 18),
 
-        // Three Step Cards
-        _buildStepCard(
-          stepNumber: '01',
-          title: 'Pilih Frame',
-          description: 'Tentukan desain favoritmu.',
-          icon: Icons.layers_outlined,
-          isHighlight: true,
-        ),
-        const SizedBox(height: 10),
-        _buildStepCard(
-          stepNumber: '02',
-          title: 'Ambil Foto',
-          description: 'Gunakan kamera depan atau belakang.',
-          icon: Icons.camera_alt_outlined,
-        ),
-        const SizedBox(height: 10),
-        _buildStepCard(
-          stepNumber: '03',
-          title: 'Simpan Hasil',
-          description: 'Pilih filter dan unduh fotomu.',
-          icon: Icons.file_download_outlined,
-        ),
+        // Three Step Cards (Row on desktop, Column on mobile)
+        if (isDesktop)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: step1),
+                const SizedBox(width: 14),
+                Expanded(child: step2),
+                const SizedBox(width: 14),
+                Expanded(child: step3),
+              ],
+            ),
+          )
+        else
+          Column(
+            children: [
+              step1,
+              const SizedBox(height: 10),
+              step2,
+              const SizedBox(height: 10),
+              step3,
+            ],
+          ),
       ],
     );
   }
