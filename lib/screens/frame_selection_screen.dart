@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import 'photo_screen.dart';
 
 class FrameSelectionScreen extends StatefulWidget {
   const FrameSelectionScreen({super.key});
@@ -9,118 +10,294 @@ class FrameSelectionScreen extends StatefulWidget {
   State<FrameSelectionScreen> createState() => _FrameSelectionScreenState();
 }
 
-class _FrameSelectionScreenState extends State<FrameSelectionScreen> {
-  int _selectedFrameIndex = 0;
+class _FrameSelectionScreenState extends State<FrameSelectionScreen>
+    with SingleTickerProviderStateMixin {
+  // Set of expanded category slotCounts. '1' is expanded by default.
+  final Set<String> _expandedSections = {'1'};
 
-  final List<Map<String, String>> _frames = [
+  // Currently selected frame
+  late Map<String, dynamic> _selectedFrame;
+
+  late final AnimationController _entryController;
+  late final Animation<double> _entryAnimation;
+
+  // Frame collections grouped by slot count
+  final List<Map<String, dynamic>> _sections = [
     {
-      'id': '1',
-      'title': 'Sparkle Lime',
-      'subtitle': 'Desain 1 foto dengan warna lime signature dan bintang ceria',
-      'asset': 'assets/frame/1.png',
-      'slots': '1 Foto',
+      'slotCount': '1',
+      'title': 'Frame 1 Foto',
+      'subtitle': 'Format single shot klasik photobooth',
+      'badge': '3 Desain Aktif',
+      'isReady': true,
+      'icon': Icons.crop_original_rounded,
+      'frames': [
+        {
+          'id': '1',
+          'title': 'Robot Signature',
+          'subtitle': 'Karakter robot ceria signature "Terima kasih!"',
+          'asset': 'assets/frame/3.png',
+          'slots': '1 Foto',
+          'isAvailable': true,
+        },
+        {
+          'id': '2',
+          'title': 'Sparkle Lime',
+          'subtitle': 'Warna lime signature & bintang "Thanks a Lot!"',
+          'asset': 'assets/frame/1.png',
+          'slots': '1 Foto',
+          'isAvailable': true,
+        },
+        {
+          'id': '3',
+          'title': 'Clean Studio',
+          'subtitle': 'Monokrom studio minimalis & elegan',
+          'asset': 'assets/frame/2.png',
+          'slots': '1 Foto',
+          'isAvailable': true,
+        },
+        {
+          'id': '1-4',
+          'title': 'Minimal Polar',
+          'subtitle': 'Format polaroid single shot modern',
+          'asset': '',
+          'slots': '1 Foto',
+          'isAvailable': false,
+        },
+      ],
     },
     {
-      'id': '2',
-      'title': 'Clean Studio',
-      'subtitle': 'Desain 1 foto monokrom minimalis yang elegan dan clean',
-      'asset': 'assets/frame/2.png',
-      'slots': '1 Foto',
+      'slotCount': '2',
+      'title': 'Frame 2 Foto',
+      'subtitle': 'Desain strip 2 foto bertingkat & grid split',
+      'badge': 'Segera Hadir',
+      'isReady': false,
+      'icon': Icons.view_agenda_rounded,
+      'frames': [
+        {
+          'id': '2-1',
+          'title': 'Twin Strip',
+          'subtitle': 'Strip 2 pose vertikal klasik',
+          'asset': '',
+          'slots': '2 Foto',
+          'isAvailable': false,
+        },
+        {
+          'id': '2-2',
+          'title': 'Duo Studio',
+          'subtitle': 'Dua foto berdampingan modern',
+          'asset': '',
+          'slots': '2 Foto',
+          'isAvailable': false,
+        },
+        {
+          'id': '2-3',
+          'title': 'Split Polar',
+          'subtitle': 'Gaya polaroid ganda estetik',
+          'asset': '',
+          'slots': '2 Foto',
+          'isAvailable': false,
+        },
+        {
+          'id': '2-4',
+          'title': 'Dual Pop',
+          'subtitle': 'Grid 2 frame minimalis kekinian',
+          'asset': '',
+          'slots': '2 Foto',
+          'isAvailable': false,
+        },
+      ],
     },
     {
-      'id': '3',
-      'title': 'Monster Doodle',
-      'subtitle': 'Desain 1 foto dengan karakter kartun playful dan ekspresif',
-      'asset': 'assets/frame/3.png',
-      'slots': '1 Foto',
+      'slotCount': '3',
+      'title': 'Frame 3 Foto',
+      'subtitle': 'Format vertikal 3 pose favorit photostrip',
+      'badge': 'Segera Hadir',
+      'isReady': false,
+      'icon': Icons.table_rows_rounded,
+      'frames': [
+        {
+          'id': '3-1',
+          'title': 'Triple Strip',
+          'subtitle': 'Photostrip vertikal 3 pose',
+          'asset': '',
+          'slots': '3 Foto',
+          'isAvailable': false,
+        },
+        {
+          'id': '3-2',
+          'title': 'Trio Collage',
+          'subtitle': 'Kolase 3 pose ekspresif',
+          'asset': '',
+          'slots': '3 Foto',
+          'isAvailable': false,
+        },
+        {
+          'id': '3-3',
+          'title': 'Story Box 3',
+          'subtitle': 'Cerita 3 momen bersambung',
+          'asset': '',
+          'slots': '3 Foto',
+          'isAvailable': false,
+        },
+        {
+          'id': '3-4',
+          'title': 'Cinema 3-Cut',
+          'subtitle': 'Format rol film 3 pose sinematik',
+          'asset': '',
+          'slots': '3 Foto',
+          'isAvailable': false,
+        },
+      ],
+    },
+    {
+      'slotCount': '4',
+      'title': 'Frame 4 Foto',
+      'subtitle': 'Format 4-cut photostrip & 2x2 grid viral',
+      'badge': 'Segera Hadir',
+      'isReady': false,
+      'icon': Icons.grid_view_rounded,
+      'frames': [
+        {
+          'id': '4-1',
+          'title': 'Korean 4-Cut',
+          'subtitle': 'Photostrip 4 pose Korea viral',
+          'asset': '',
+          'slots': '4 Foto',
+          'isAvailable': false,
+        },
+        {
+          'id': '4-2',
+          'title': '2x2 Grid Pop',
+          'subtitle': 'Grid 4 kotak simetris',
+          'asset': '',
+          'slots': '4 Foto',
+          'isAvailable': false,
+        },
+        {
+          'id': '4-3',
+          'title': 'Cinema 4-Strip',
+          'subtitle': 'Gaya rol film sinematik',
+          'asset': '',
+          'slots': '4 Foto',
+          'isAvailable': false,
+        },
+        {
+          'id': '4-4',
+          'title': 'Quad Collage',
+          'subtitle': 'Kolase 4 pose playful kekinian',
+          'asset': '',
+          'slots': '4 Foto',
+          'isAvailable': false,
+        },
+      ],
     },
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    // Default selection is the user-attached Robot frame (first item of Frame 1 Foto)
+    _selectedFrame = (_sections[0]['frames'] as List)[0];
+
+    _entryController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _entryAnimation = CurvedAnimation(
+      parent: _entryController,
+      curve: Curves.easeOutCubic,
+    );
+    _entryController.forward();
+  }
+
+  @override
+  void dispose() {
+    _entryController.dispose();
+    super.dispose();
+  }
+
+  void _toggleSection(String slotCount) {
+    setState(() {
+      if (_expandedSections.contains(slotCount)) {
+        _expandedSections.remove(slotCount);
+      } else {
+        _expandedSections.add(slotCount);
+      }
+    });
+  }
+
   void _onUseFramePressed() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    final isAvailable = _selectedFrame['isAvailable'] as bool? ?? false;
+    if (!isAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.primaryBlack,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          content: Row(
             children: [
               Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
                   color: AppColors.secondaryLime,
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.primaryBlack, width: 2),
                 ),
                 child: const Icon(
-                  Icons.camera_alt_outlined,
+                  Icons.info_outline_rounded,
                   color: AppColors.primaryBlack,
-                  size: 28,
+                  size: 16,
                 ),
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Frame ${_frames[_selectedFrameIndex]['title']} Terpilih',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryBlack,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Integrasi kamera langsung, live countdown, dan penataan komposit foto akan diaktifkan pada tahap pengembangan berikutnya.',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  height: 1.45,
-                  color: AppColors.secondaryText,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlack,
-                    foregroundColor: AppColors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Siap, Kembali ke Pilihan',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Aset frame ${_selectedFrame['slots']} belum ditambahkan. Silakan pilih dari koleksi 1 Foto!',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.white,
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
             ],
           ),
-        );
-      },
+        ),
+      );
+      return;
+    }
+
+    // Convert to String map for PhotoScreen
+    final frameMap = <String, String>{
+      'id': _selectedFrame['id'] as String,
+      'title': _selectedFrame['title'] as String,
+      'subtitle': _selectedFrame['subtitle'] as String,
+      'asset': _selectedFrame['asset'] as String,
+      'slots': _selectedFrame['slots'] as String,
+    };
+
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 350),
+        reverseTransitionDuration: const Duration(milliseconds: 300),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            PhotoScreen(frame: frameMap),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          );
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.0, 0.05),
+              end: Offset.zero,
+            ).animate(curved),
+            child: FadeTransition(opacity: curved, child: child),
+          );
+        },
+      ),
     );
   }
 
@@ -135,306 +312,697 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen> {
         leading: Padding(
           padding: const EdgeInsets.only(left: 16),
           child: Center(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(24),
-              onTap: () => Navigator.of(context).pop(),
-              child: Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: AppColors.primaryBlack,
-                  size: 16,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(24),
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.border),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: AppColors.primaryBlack,
+                    size: 16,
+                  ),
                 ),
               ),
             ),
           ),
         ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Pilih Frame',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryBlack,
-                letterSpacing: 0.2,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              width: 6,
-              height: 6,
-              decoration: const BoxDecoration(
-                color: AppColors.secondaryLime,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ],
+        title: Text(
+          'Pilih Frame',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primaryBlack,
+            letterSpacing: 0.2,
+          ),
         ),
         centerTitle: true,
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
+        child: FadeTransition(
+          opacity: _entryAnimation,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 880),
+              child: Column(
+                children: [
+                  // Top Guide Hint (replacing the navbar)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: AppColors.secondaryLime.withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(8),
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.border),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      child: const Icon(
-                        Icons.auto_awesome,
-                        size: 16,
-                        color: AppColors.primaryBlack,
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppColors.secondaryLime,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.touch_app_rounded,
+                              size: 16,
+                              color: AppColors.primaryBlack,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Ketuk kategori format frame di bawah untuk membuka pilihan frame',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primaryBlack,
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 10),
+                  ),
+
+                  // Expandable Category List (Frames 1 Foto, 2 Foto, 3 Foto, 4 Foto)
+                  Expanded(
+                    child: ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: _sections.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final section = _sections[index];
+                        return _buildSection(section);
+                      },
+                    ),
+                  ),
+
+                  // Bottom Sticky Action Bar
+                  _buildBottomActionBar(),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection(Map<String, dynamic> section) {
+    final slotCount = section['slotCount'] as String;
+    final title = section['title'] as String;
+    final subtitle = section['subtitle'] as String;
+    final badge = section['badge'] as String;
+    final isReady = section['isReady'] as bool;
+    final icon = (section['icon'] as IconData?) ?? Icons.crop_original_rounded;
+    final frames = section['frames'] as List;
+    final isExpanded = _expandedSections.contains(slotCount);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isExpanded ? AppColors.primaryBlack : AppColors.border,
+          width: isExpanded ? 1.6 : 1.0,
+        ),
+        boxShadow: [
+          if (isExpanded)
+            BoxShadow(
+              color: AppColors.secondaryLime.withValues(alpha: 0.22),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            )
+          else
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => _toggleSection(slotCount),
+          child: Padding(
+            padding: const EdgeInsets.all(15),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header (Tappable: Click to expand / collapse downwards)
+                Row(
+                  children: [
+                    // Icon slot count
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: isExpanded
+                            ? AppColors.primaryBlack
+                            : (isReady
+                                ? AppColors.secondaryLime.withValues(alpha: 0.35)
+                                : AppColors.surfaceMuted),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        icon,
+                        size: 20,
+                        color: isExpanded
+                            ? AppColors.secondaryLime
+                            : AppColors.primaryBlack,
+                      ),
+                    ),
+                    const SizedBox(width: 13),
+
+                    // Title & Subtitle
                     Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryBlack,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11.5,
+                              color: AppColors.secondaryText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isReady
+                            ? AppColors.secondaryLime
+                            : AppColors.surfaceMuted,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       child: Text(
-                        'Pilih desain frame 1 foto favoritmu dari koleksi eksklusif MZ Photobooth.',
+                        badge,
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: AppColors.secondaryText,
-                          height: 1.35,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryBlack,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Animated Chevron (Rotates downwards/upwards)
+                    AnimatedRotation(
+                      turns: isExpanded ? 0.5 : 0.0,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: isExpanded
+                              ? AppColors.primaryBlack
+                              : AppColors.surfaceMuted,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 18,
+                          color: isExpanded
+                              ? AppColors.secondaryLime
+                              : AppColors.primaryBlack,
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                itemCount: _frames.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 16),
-                itemBuilder: (context, index) {
-                  final frame = _frames[index];
-                  final isSelected = _selectedFrameIndex == index;
 
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedFrameIndex = index;
-                      });
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppColors.primaryBlack
-                              : AppColors.border,
-                          width: isSelected ? 2 : 1,
-                        ),
-                        boxShadow: [
-                          if (isSelected)
-                            BoxShadow(
-                              color: AppColors.secondaryLime.withValues(alpha: 0.5),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            )
-                          else
-                            const BoxShadow(
-                              color: AppColors.cardShadow,
-                              blurRadius: 6,
-                              offset: Offset(0, 2),
+                // Expandable Section Content (Expands vertically downwards)
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.topCenter,
+                  child: isExpanded
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 14),
+                            Container(
+                              height: 1,
+                              color: AppColors.border.withValues(alpha: 0.6),
                             ),
-                        ],
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          // Frame thumbnail with proportional 1440:1380 ratio
-                          Container(
-                            width: 86,
-                            height: 82,
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceMuted,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.border),
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              alignment: Alignment.center,
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.grey.shade200,
-                                        Colors.grey.shade300,
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                Image.asset(
-                                  frame['asset']!,
-                                  fit: BoxFit.fill,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Icon(
-                                      Icons.image_not_supported_outlined,
-                                      size: 24,
-                                      color: AppColors.secondaryText,
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          // Details
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 3,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? AppColors.secondaryLime
-                                            : AppColors.surfaceMuted,
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        frame['slots']!,
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                          color: isSelected
-                                              ? AppColors.primaryBlack
-                                              : AppColors.secondaryText,
-                                          letterSpacing: 0.4,
-                                        ),
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    if (isSelected)
-                                      Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: const BoxDecoration(
-                                          color: AppColors.primaryBlack,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.check,
-                                          color: AppColors.secondaryLime,
-                                          size: 14,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
                                 Text(
-                                  frame['title']!,
+                                  isReady
+                                      ? 'PILIH DESAIN FRAME:'
+                                      : 'SLOT FRAME SEGERA HADIR:',
                                   style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primaryBlack,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  frame['subtitle']!,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 12,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.8,
                                     color: AppColors.secondaryText,
-                                    height: 1.3,
+                                  ),
+                                ),
+                                Text(
+                                  '${frames.length} Desain',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.secondaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+
+                            // Responsive Vertical Grid: 2 columns on mobile, 4 columns on web
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                // Breakpoint: >= 600px web/desktop -> 4 columns; < 600px mobile -> 2 columns
+                                final int crossAxisCount =
+                                    constraints.maxWidth >= 600 ? 4 : 2;
+                                const double spacing = 10.0;
+
+                                final List<List<Map<String, dynamic>>> rows = [];
+                                for (int i = 0;
+                                    i < frames.length;
+                                    i += crossAxisCount) {
+                                  final end = (i + crossAxisCount < frames.length)
+                                      ? i + crossAxisCount
+                                      : frames.length;
+                                  rows.add(frames
+                                      .sublist(i, end)
+                                      .cast<Map<String, dynamic>>());
+                                }
+
+                                return Column(
+                                  children: List.generate(rows.length, (rowIdx) {
+                                    final rowFrames = rows[rowIdx];
+                                    final isLastRow = rowIdx == rows.length - 1;
+
+                                    return Padding(
+                                      padding: EdgeInsets.only(
+                                        bottom: isLastRow ? 0 : spacing,
+                                      ),
+                                      child: IntrinsicHeight(
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            for (int colIdx = 0;
+                                                colIdx < crossAxisCount;
+                                                colIdx++) ...[
+                                              if (colIdx > 0)
+                                                const SizedBox(width: spacing),
+                                              if (colIdx < rowFrames.length)
+                                                Expanded(
+                                                  child: _buildFrameCard(
+                                                    rowFrames[colIdx],
+                                                    _selectedFrame['id'] ==
+                                                        rowFrames[colIdx]['id'],
+                                                  ),
+                                                )
+                                              else
+                                                const Expanded(
+                                                  child: SizedBox.shrink(),
+                                                ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                );
+                              },
+                            ),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFrameCard(Map<String, dynamic> frame, bool isSelected) {
+    final isAvailable = frame['isAvailable'] as bool;
+    final title = frame['title'] as String;
+    final subtitle = frame['subtitle'] as String;
+    final slots = frame['slots'] as String;
+    final asset = frame['asset'] as String;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedFrame = frame;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        width: double.infinity,
+        padding: const EdgeInsets.all(9),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppColors.primaryBlack : AppColors.border,
+            width: 1.5,
+          ),
+          boxShadow: [
+            if (isSelected)
+              BoxShadow(
+                color: AppColors.secondaryLime.withValues(alpha: 0.4),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              )
+            else
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Frame Preview Thumbnail
+            AspectRatio(
+              aspectRatio: 1440 / 1380,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isAvailable ? AppColors.surfaceMuted : const Color(0xFFF9F9F9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isAvailable ? AppColors.border : Colors.grey.shade300,
+                    style: isAvailable ? BorderStyle.solid : BorderStyle.solid,
+                  ),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: isAvailable
+                    ? Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Container(
+                            color: const Color(0xFFEFEFEF),
+                          ),
+                          Image.asset(
+                            asset,
+                            fit: BoxFit.fill,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Center(
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  size: 28,
+                                  color: AppColors.secondaryText,
+                                ),
+                              );
+                            },
+                          ),
+                          if (isSelected)
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primaryBlack,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.check,
+                                  color: AppColors.secondaryLime,
+                                  size: 11,
+                                ),
+                              ),
+                            ),
+                        ],
+                      )
+                    : Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // Placeholder preview layout for coming soon slots
+                          Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  slots == '2 Foto'
+                                      ? Icons.view_agenda_outlined
+                                      : (slots == '3 Foto'
+                                          ? Icons.table_rows_outlined
+                                          : (slots == '4 Foto'
+                                              ? Icons.grid_view_rounded
+                                              : Icons.crop_original_rounded)),
+                                  size: 26,
+                                  color: AppColors.secondaryText.withValues(alpha: 0.7),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade200,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'Slot Siap',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.secondaryText,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
+                          if (isSelected)
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primaryBlack,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.check,
+                                  color: AppColors.secondaryLime,
+                                  size: 11,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
-                    ),
-                  );
-                },
               ),
             ),
-            // Bottom Action Button
+            const SizedBox(height: 8),
+
+            // Slot Pill Tag
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-              decoration: const BoxDecoration(
-                color: AppColors.white,
-                border: Border(
-                  top: BorderSide(color: AppColors.border, width: 1),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.secondaryLime.withValues(alpha: 0.4)
+                    : AppColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                slots,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primaryBlack,
                 ),
               ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlack,
-                    foregroundColor: AppColors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                  ),
-                  onPressed: _onUseFramePressed,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: const BoxDecoration(
-                          color: AppColors.secondaryLime,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 16,
-                          color: AppColors.primaryBlack,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Gunakan Frame',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+            ),
+            const SizedBox(height: 4),
+
+            // Frame Title
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryBlack,
+              ),
+            ),
+
+            // Subtitle
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10,
+                color: AppColors.secondaryText,
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildBottomActionBar() {
+    final isAvailable = _selectedFrame['isAvailable'] as bool? ?? false;
+    final title = _selectedFrame['title'] as String;
+    final slots = _selectedFrame['slots'] as String;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        border: const Border(
+          top: BorderSide(color: AppColors.border, width: 1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Selected summary row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: isAvailable ? Colors.green : Colors.orangeAccent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Pilihan: $title ($slots)',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryBlack,
+                    ),
+                  ),
+                ],
+              ),
+              if (!isAvailable)
+                Text(
+                  'Aset belum ada',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.orange.shade800,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Primary CTA Button
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isAvailable
+                    ? AppColors.primaryBlack
+                    : Colors.grey.shade400,
+                foregroundColor: AppColors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+              ),
+              onPressed: _onUseFramePressed,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: isAvailable ? AppColors.secondaryLime : Colors.white24,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 15,
+                      color: isAvailable ? AppColors.primaryBlack : Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    isAvailable ? 'Gunakan Frame Ini' : 'Frame Belum Ditambahkan',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -10,24 +10,55 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int _activePreviewIndex = 0;
   final List<String> _frameAssets = [
+    'assets/frame/3.png',
     'assets/frame/1.png',
     'assets/frame/2.png',
-    'assets/frame/3.png',
   ];
+
+  late final AnimationController _fadeController;
+  late final Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOutCubic,
+    );
+    _fadeController.forward();
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
+  }
 
   void _showInfoDialog() {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (BuildContext context) {
         return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
             color: AppColors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 24,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -35,52 +66,40 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Center(
                 child: Container(
-                  width: 36,
-                  height: 4,
+                  width: 40,
+                  height: 4.5,
                   decoration: BoxDecoration(
                     color: AppColors.border,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(3),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: AppColors.secondaryLime,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'MZ PHOTOBOOTH',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.0,
-                      color: AppColors.primaryBlack,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 24),
+              Text(
+                'MZ PHOTOBOOTH',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                  color: AppColors.primaryBlack,
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               Text(
                 'Aplikasi Photobooth digital portabel dirancang khusus untuk pengalaman berfoto yang estetik, cepat, dan berkesan. Pilih frame kesukaanmu dan abadikan setiap momen penting bersama teman dan orang terdekat.',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
-                  height: 1.5,
+                  height: 1.55,
                   color: AppColors.secondaryText,
                 ),
               ),
               const SizedBox(height: 20),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceMuted,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Row(
                   children: [
@@ -89,19 +108,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       size: 18,
                       color: AppColors.primaryBlack,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Versi 1.0 • Mobile Photobooth Experience',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primaryBlack,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Versi 1.0 • Mobile Photobooth Experience',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryBlack,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -110,15 +131,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     foregroundColor: AppColors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   onPressed: () => Navigator.pop(context),
                   child: Text(
                     'Tutup',
                     style: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
                     ),
                   ),
                 ),
@@ -132,8 +154,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _navigateToFrameSelection() {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const FrameSelectionScreen(),
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 350),
+        reverseTransitionDuration: const Duration(milliseconds: 300),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const FrameSelectionScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          );
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.0, 0.05),
+              end: Offset.zero,
+            ).animate(curved),
+            child: FadeTransition(opacity: curved, child: child),
+          );
+        },
       ),
     );
   }
@@ -143,36 +181,39 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Header Section with adjusted zoomed logo
-              _buildHeader(),
-              const SizedBox(height: 24),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Header Section (without stabilo dot)
+                _buildHeader(),
+                const SizedBox(height: 26),
 
-              // 2. Hero Section: Direct eyebrow text (no frame) + Headline + Description
-              _buildHeroText(),
-              const SizedBox(height: 20),
+                // 2. Hero Section (without stabilo dot)
+                _buildHeroText(),
+                const SizedBox(height: 22),
 
-              // 3. Large Featured Photo Preview Card
-              _buildPreviewCard(),
-              const SizedBox(height: 28),
+                // 3. Featured Photo Preview Card with example photo in frame
+                _buildPreviewCard(),
+                const SizedBox(height: 28),
 
-              // 4. Preparation & Three-Step Guide
-              _buildStepSection(),
-              const SizedBox(height: 28),
+                // 4. Preparation & Three-Step Guide
+                _buildStepSection(),
+                const SizedBox(height: 28),
 
-              // 5. Primary Call to Action Button
-              _buildPrimaryCTA(),
-              const SizedBox(height: 20),
+                // 5. Primary Call to Action Button
+                _buildPrimaryCTA(),
+                const SizedBox(height: 20),
 
-              // 6. Subtle Footer
-              _buildFooter(),
-              const SizedBox(height: 12),
-            ],
+                // 6. Subtle Footer
+                _buildFooter(),
+                const SizedBox(height: 12),
+              ],
+            ),
           ),
         ),
       ),
@@ -183,104 +224,92 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Left Side: MZ Photobooth Logo - Zoomed in without excessive padding
-        Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.secondaryLime,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: const [
-                  BoxShadow(
-                    color: AppColors.cardShadow,
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Transform.scale(
-                scale: 1.35,
-                child: Image.asset(
-                  'assets/logo/MZP.png',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Center(
-                      child: Icon(
-                        Icons.photo_camera_rounded,
-                        color: AppColors.primaryBlack,
-                        size: 24,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'MZ PHOTOBOOTH',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.1,
-                        color: AppColors.primaryBlack,
-                      ),
+        // Left Side: MZ Photobooth Logo + Title (no stabilo dot)
+        Expanded(
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.secondaryLime,
+                  borderRadius: BorderRadius.circular(13),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.secondaryLime.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
-                    const SizedBox(width: 6),
-                    Container(
-                      width: 6.5,
-                      height: 6.5,
-                      decoration: const BoxDecoration(
-                        color: AppColors.secondaryLime,
-                        shape: BoxShape.circle,
-                      ),
+                    const BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
                     ),
                   ],
                 ),
-                Text(
-                  'STUDIO EDITION',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.5,
-                    color: AppColors.secondaryText,
+                clipBehavior: Clip.antiAlias,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.5),
+                  child: Image.asset(
+                    'assets/logo/MZP.png',
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Center(
+                        child: Icon(
+                          Icons.photo_camera_rounded,
+                          color: AppColors.primaryBlack,
+                          size: 24,
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'MZ PHOTOBOOTH',
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                    color: AppColors.primaryBlack,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
 
+        const SizedBox(width: 12),
+
         // Right Side: Minimal Information Button
-        InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: _showInfoDialog,
-          child: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.border),
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.cardShadow,
-                  blurRadius: 4,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.info_outline_rounded,
-              color: AppColors.primaryBlack,
-              size: 18,
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: _showInfoDialog,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.border),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.info_outline_rounded,
+                color: AppColors.primaryBlack,
+                size: 18,
+              ),
             ),
           ),
         ),
@@ -292,29 +321,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Direct Eyebrow text without enclosing frame/pill
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 7,
-              height: 7,
-              decoration: const BoxDecoration(
-                color: AppColors.secondaryLime,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'YOUR PERSONAL PHOTOBOOTH',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.4,
-                color: AppColors.secondaryText,
-              ),
-            ),
-          ],
+        // Eyebrow text without stabilo dot
+        Text(
+          'YOUR PERSONAL PHOTOBOOTH',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.6,
+            color: AppColors.secondaryText,
+          ),
         ),
         const SizedBox(height: 12),
 
@@ -322,21 +337,21 @@ class _HomeScreenState extends State<HomeScreen> {
         Text(
           'Your moment,\nyour frame.',
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 32,
-            height: 1.15,
+            fontSize: 34,
+            height: 1.12,
             fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
+            letterSpacing: -0.6,
             color: AppColors.primaryBlack,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
 
         // Indonesian Supporting Text
         Text(
           'Abadikan momenmu, pilih gaya favoritmu, dan simpan hasilnya.',
           style: GoogleFonts.plusJakartaSans(
             fontSize: 14.5,
-            height: 1.45,
+            height: 1.5,
             color: AppColors.secondaryText,
             fontWeight: FontWeight.w400,
           ),
@@ -350,36 +365,41 @@ class _HomeScreenState extends State<HomeScreen> {
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.border),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: AppColors.cardShadow,
-            blurRadius: 16,
-            offset: Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          // Top Subtle Editorial Label Bar
+          // Top Label Bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
                     Container(
-                      width: 6,
-                      height: 6,
+                      width: 7,
+                      height: 7,
                       decoration: const BoxDecoration(
                         color: AppColors.primaryBlack,
                         shape: BoxShape.circle,
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     Text(
                       'MZ PHOTOBOOTH LAB',
                       style: GoogleFonts.plusJakartaSans(
@@ -392,13 +412,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.secondaryLime,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.secondaryLime.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Text(
-                    'YOUR NEXT MEMORY',
+                    'CONTOH HASIL',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
@@ -411,165 +438,104 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // Proportional Frame preview container matching 1440x1380 aspect ratio
+          // Frame preview container with real example photo inside frame
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: AspectRatio(
               aspectRatio: 1440 / 1380,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceMuted,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.border),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // Precise photo background aligned with the frame's 4:3 cutout
-                    // Transparent slot is at: left 8.9%, right 9.0%, top 9.3%, bottom 26.8%
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      top: 0,
-                      bottom: 0,
-                      child: FractionallySizedBox(
-                        widthFactor: 0.822, // 1182 / 1440
-                        heightFactor: 0.639, // 882 / 1380
-                        alignment: const Alignment(0, -0.74), // Centers directly in upper cutout
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Colors.grey.shade200,
-                                Colors.grey.shade300,
-                              ],
-                            ),
-                          ),
-                          child: Stack(
-                            children: [
-                              // Subtle studio photobooth atmosphere graphic
-                              Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      width: 48,
-                                      height: 48,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.white.withValues(alpha: 0.9),
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.06),
-                                            blurRadius: 8,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Real photo example from assets/example/
+                      Positioned.fill(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final w = constraints.maxWidth;
+                            final h = constraints.maxHeight;
+
+                            final photoLeft = w * (120.0 / 1440.0);
+                            final photoTop = h * (120.0 / 1380.0);
+                            final photoWidth = w * (1200.0 / 1440.0);
+                            final photoHeight = h * (896.0 / 1380.0);
+                            final photoRadius = w * (40.0 / 1440.0);
+
+                            return Stack(
+                              children: [
+                                Positioned(
+                                  left: photoLeft,
+                                  top: photoTop,
+                                  width: photoWidth,
+                                  height: photoHeight,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(photoRadius),
+                                    child: Image.asset(
+                                      'assets/example/62e6af186f4ee.jpg',
+                                      fit: BoxFit.cover,
+                                      alignment: const Alignment(0, -0.35),
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          color: Colors.grey.shade200,
+                                          child: const Center(
+                                            child: Icon(
+                                              Icons.photo_rounded,
+                                              color: AppColors.secondaryText,
+                                              size: 36,
+                                            ),
                                           ),
-                                        ],
-                                      ),
-                                      child: const Icon(
-                                        Icons.camera_alt_outlined,
-                                        size: 24,
-                                        color: AppColors.primaryBlack,
-                                      ),
+                                        );
+                                      },
                                     ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'PHOTOBOOTH PREVIEW',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 1.2,
-                                        color: AppColors.primaryBlack,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Momen indahmu akan tampil di sini',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 8.5,
-                                        color: AppColors.secondaryText,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Top status tag inside camera preview
-                              Positioned(
-                                top: 8,
-                                left: 10,
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 5,
-                                      height: 5,
-                                      decoration: const BoxDecoration(
-                                        color: Colors.redAccent,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'LIVE',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 7.5,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.8,
-                                        color: AppColors.secondaryText,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Positioned(
-                                top: 8,
-                                right: 10,
-                                child: Text(
-                                  '4:3 HD',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 7.5,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
-                                    color: AppColors.secondaryText,
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            );
+                          },
                         ),
                       ),
-                    ),
 
-                    // Featured Photobooth Frame Overlay without distortion
-                    Image.asset(
-                      _frameAssets[_activePreviewIndex],
-                      fit: BoxFit.fill,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Center(
-                          child: Icon(
-                            Icons.image_outlined,
-                            size: 48,
-                            color: AppColors.secondaryText,
-                          ),
-                        );
-                      },
+                    // Frame Overlay
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      child: Image.asset(
+                        _frameAssets[_activePreviewIndex],
+                        key: ValueKey(_activePreviewIndex),
+                        fit: BoxFit.fill,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Center(
+                            child: Icon(
+                              Icons.image_outlined,
+                              size: 48,
+                              color: AppColors.secondaryText,
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
           ),
+        ),
 
-          // Bottom Frame Selector / Navigation Indicators
+          // Bottom Frame Selector
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Pratinjau Frame',
+                  'Pilihan Frame',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -586,27 +552,38 @@ class _HomeScreenState extends State<HomeScreen> {
                         });
                       },
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.only(left: 6),
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeOutCubic,
+                        margin: const EdgeInsets.only(left: 7),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                          horizontal: 10,
+                          vertical: 5,
                         ),
                         decoration: BoxDecoration(
                           color: isActive
                               ? AppColors.primaryBlack
                               : AppColors.surfaceMuted,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: isActive
                                 ? AppColors.primaryBlack
                                 : AppColors.border,
                           ),
+                          boxShadow: isActive
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.primaryBlack
+                                        .withValues(alpha: 0.2),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
                         ),
                         child: Text(
                           '0${index + 1}',
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10,
+                            fontSize: 10.5,
                             fontWeight: FontWeight.bold,
                             color: isActive
                                 ? AppColors.secondaryLime
@@ -633,13 +610,13 @@ class _HomeScreenState extends State<HomeScreen> {
         Text(
           'Siap untuk berfoto?',
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 20,
+            fontSize: 22,
             fontWeight: FontWeight.bold,
             letterSpacing: -0.3,
             color: AppColors.primaryBlack,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 5),
 
         // Supporting Text
         Text(
@@ -649,7 +626,7 @@ class _HomeScreenState extends State<HomeScreen> {
             color: AppColors.secondaryText,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
 
         // Three Step Cards
         _buildStepCard(
@@ -685,40 +662,55 @@ class _HomeScreenState extends State<HomeScreen> {
     bool isHighlight = false,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isHighlight ? AppColors.primaryBlack : AppColors.border,
           width: isHighlight ? 1.5 : 1.0,
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.cardShadow,
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
+        boxShadow: [
+          if (isHighlight)
+            BoxShadow(
+              color: AppColors.secondaryLime.withValues(alpha: 0.15),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            )
+          else
+            const BoxShadow(
+              color: AppColors.cardShadow,
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
         ],
       ),
       child: Row(
         children: [
           // Number badge
           Container(
-            width: 34,
-            height: 34,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: AppColors.primaryBlack,
               shape: BoxShape.circle,
               border: isHighlight
-                  ? Border.all(color: AppColors.secondaryLime, width: 2)
+                  ? Border.all(color: AppColors.secondaryLime, width: 2.5)
+                  : null,
+              boxShadow: isHighlight
+                  ? [
+                      BoxShadow(
+                        color: AppColors.secondaryLime.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                      ),
+                    ]
                   : null,
             ),
             child: Center(
               child: Text(
                 stepNumber,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
+                  fontSize: 12.5,
                   fontWeight: FontWeight.bold,
                   color: isHighlight
                       ? AppColors.secondaryLime
@@ -737,7 +729,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   title,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14.5,
+                    fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.primaryBlack,
                   ),
@@ -756,7 +748,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // Icon indicator
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
               color: isHighlight
                   ? AppColors.secondaryLime.withValues(alpha: 0.35)
@@ -777,14 +769,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPrimaryCTA() {
     return Container(
       width: double.infinity,
-      height: 58,
+      height: 60,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryBlack.withValues(alpha: 0.18),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
+            color: AppColors.primaryBlack.withValues(alpha: 0.2),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -794,7 +786,7 @@ class _HomeScreenState extends State<HomeScreen> {
           foregroundColor: AppColors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 18),
         ),
@@ -803,11 +795,18 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             // Lime circular icon background
             Container(
-              width: 36,
-              height: 36,
-              decoration: const BoxDecoration(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
                 color: AppColors.secondaryLime,
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.secondaryLime.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: const Icon(
                 Icons.camera_alt,
@@ -821,8 +820,9 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: Text(
                 'Mulai Sesi Foto',
+                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
+                  fontSize: 15.5,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.3,
                   color: AppColors.white,
@@ -830,24 +830,34 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Supporting indicator on right
-            Row(
-              children: [
-                Text(
-                  'Mulai sekarang',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.white.withValues(alpha: 0.7),
+            const SizedBox(width: 8),
+
+            // Supporting indicator on right (compact and responsive)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Mulai',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.white.withValues(alpha: 0.8),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                const Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 14,
-                  color: AppColors.secondaryLime,
-                ),
-              ],
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 12,
+                    color: AppColors.secondaryLime,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
