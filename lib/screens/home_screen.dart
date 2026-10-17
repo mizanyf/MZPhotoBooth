@@ -13,9 +13,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int _activePreviewIndex = 0;
   final List<String> _frameAssets = [
-    'assets/frame/3.png',
-    'assets/frame/1.png',
-    'assets/frame/2.png',
+    'assets/frame/frame1foto/3.png',
+    'assets/frame/frame1foto/1.png',
+    'assets/frame/frame1foto/2.png',
   ];
 
   late final AnimationController _fadeController;
@@ -472,44 +472,39 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: AspectRatio(
               aspectRatio: 1440 / 1380,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // Real photo example from assets/example/
-                      Positioned.fill(
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            final w = constraints.maxWidth;
-                            final h = constraints.maxHeight;
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.zero,
+                ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Real photo example from assets/example/
+                    Positioned.fill(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final w = constraints.maxWidth;
+                          final h = constraints.maxHeight;
 
-                            final photoLeft = w * (120.0 / 1440.0);
-                            final photoTop = h * (120.0 / 1380.0);
-                            final photoWidth = w * (1200.0 / 1440.0);
-                            final photoHeight = h * (896.0 / 1380.0);
-                            final photoRadius = w * (40.0 / 1440.0);
+                          final photoLeft = w * (120.0 / 1440.0);
+                          final photoTop = h * (120.0 / 1380.0);
+                          final photoWidth = w * (1200.0 / 1440.0);
+                          final photoHeight = h * (896.0 / 1380.0);
 
-                            return Stack(
-                              children: [
-                                Positioned(
-                                  left: photoLeft,
-                                  top: photoTop,
-                                  width: photoWidth,
-                                  height: photoHeight,
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(photoRadius),
-                                    child: Image.asset(
-                                      'assets/example/62e6af186f4ee.jpg',
-                                      fit: BoxFit.cover,
-                                      alignment: const Alignment(0, -0.35),
-                                      errorBuilder: (context, error, stackTrace) {
+                          return Stack(
+                            children: [
+                              Positioned(
+                                left: photoLeft,
+                                top: photoTop,
+                                width: photoWidth,
+                                height: photoHeight,
+                                child: ClipRect(
+                                  child: Image.asset(
+                                    'assets/example/62e6af186f4ee.jpg',
+                                    fit: BoxFit.cover,
+                                    alignment: const Alignment(0, -0.35),
+                                    errorBuilder: (context, error, stackTrace) {
                                         return Container(
                                           color: Colors.grey.shade200,
                                           child: const Center(
@@ -555,7 +550,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
           ),
-        ),
 
           // Bottom Frame Selector (Centered 01, 02, 03)
           Padding(

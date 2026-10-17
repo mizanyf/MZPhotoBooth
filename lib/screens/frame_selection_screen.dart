@@ -32,78 +32,46 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
       'icon': Icons.crop_original_rounded,
       'frames': [
         {
-          'id': '1',
+          'id': '1-1',
           'title': 'Robot Signature',
           'subtitle': 'Karakter robot ceria signature "Terima kasih!"',
-          'asset': 'assets/frame/3.png',
+          'asset': 'assets/frame/frame1foto/3.png',
           'slots': '1 Foto',
           'isAvailable': true,
         },
         {
-          'id': '2',
+          'id': '1-2',
           'title': 'Sparkle Lime',
           'subtitle': 'Warna lime signature & bintang "Thanks a Lot!"',
-          'asset': 'assets/frame/1.png',
+          'asset': 'assets/frame/frame1foto/1.png',
           'slots': '1 Foto',
           'isAvailable': true,
         },
         {
-          'id': '3',
+          'id': '1-3',
           'title': 'Clean Studio',
           'subtitle': 'Monokrom studio minimalis & elegan',
-          'asset': 'assets/frame/2.png',
+          'asset': 'assets/frame/frame1foto/2.png',
           'slots': '1 Foto',
           'isAvailable': true,
-        },
-        {
-          'id': '1-4',
-          'title': 'Minimal Polar',
-          'subtitle': 'Format polaroid single shot modern',
-          'asset': '',
-          'slots': '1 Foto',
-          'isAvailable': false,
         },
       ],
     },
     {
       'slotCount': '2',
       'title': 'Frame 2 Foto',
-      'subtitle': 'Desain strip 2 foto bertingkat & grid split',
-      'badge': 'Segera Hadir',
-      'isReady': false,
+      'subtitle': 'Format strip 2 pose photostrip vertikal',
+      'badge': '1 Desain Aktif',
+      'isReady': true,
       'icon': Icons.view_agenda_rounded,
       'frames': [
         {
           'id': '2-1',
-          'title': 'Twin Strip',
-          'subtitle': 'Strip 2 pose vertikal klasik',
-          'asset': '',
+          'title': 'Robot Twin Strip',
+          'subtitle': 'Strip 2 pose vertikal karakter robot ceria',
+          'asset': 'assets/frame/frame2foto/1.png',
           'slots': '2 Foto',
-          'isAvailable': false,
-        },
-        {
-          'id': '2-2',
-          'title': 'Duo Studio',
-          'subtitle': 'Dua foto berdampingan modern',
-          'asset': '',
-          'slots': '2 Foto',
-          'isAvailable': false,
-        },
-        {
-          'id': '2-3',
-          'title': 'Split Polar',
-          'subtitle': 'Gaya polaroid ganda estetik',
-          'asset': '',
-          'slots': '2 Foto',
-          'isAvailable': false,
-        },
-        {
-          'id': '2-4',
-          'title': 'Dual Pop',
-          'subtitle': 'Grid 2 frame minimalis kekinian',
-          'asset': '',
-          'slots': '2 Foto',
-          'isAvailable': false,
+          'isAvailable': true,
         },
       ],
     },
@@ -276,6 +244,7 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
       'subtitle': _selectedFrame['subtitle'] as String,
       'asset': _selectedFrame['asset'] as String,
       'slots': _selectedFrame['slots'] as String,
+      'slotCount': (_selectedFrame['slots'] as String).contains('2') ? '2' : '1',
     };
 
     Navigator.of(context).push(
@@ -737,11 +706,11 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
           children: [
             // Frame Preview Thumbnail
             AspectRatio(
-              aspectRatio: 1440 / 1380,
+              aspectRatio: slots == '2 Foto' ? (720 / 1170) : (1440 / 1380),
               child: Container(
                 decoration: BoxDecoration(
                   color: isAvailable ? AppColors.surfaceMuted : const Color(0xFFF9F9F9),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.zero,
                   border: Border.all(
                     color: isAvailable ? AppColors.border : Colors.grey.shade300,
                     style: isAvailable ? BorderStyle.solid : BorderStyle.solid,

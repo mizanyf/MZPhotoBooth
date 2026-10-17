@@ -24,14 +24,19 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
   final GlobalKey _previewBoundaryKey = GlobalKey();
   final WebCameraHelper _cameraHelper = WebCameraHelper();
 
+  int get _slotCount =>
+      widget.frame['slotCount'] == '2' || widget.frame['slots']?.contains('2') == true ? 2 : 1;
+
   bool _isCameraLoading = false;
   bool _isCaptured = false;
   bool _isCountingDown = false;
+  bool _isWaitingNextPose = false;
   int _countdownNumber = 3;
   bool _showFlash = false;
   bool _isDownloading = false;
 
-  Uint8List? _capturedBytes;
+  int _activeCaptureSlot = 0;
+  late List<Uint8List?> _capturedPhotos;
   int _selectedFilterIndex = 0;
   int _cameraKey = 0;
 
@@ -125,6 +130,7 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
   @override
   void initState() {
     super.initState();
+    _capturedPhotos = List.filled(_slotCount, null);
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -154,7 +160,7 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
   }
 
   void _startCountdown() {
-    if (_isCountingDown || _isCaptured) return;
+    if (_isCountingDown || _isCaptured || _isWaitingNextPose) return;
 
     setState(() {
       _isCountingDown = true;
@@ -188,18 +194,41 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
       captured = _cameraHelper.captureFrame();
     }
 
-    // 2. Flash effect
+    // 2. Flash effect & store in current active slot
     setState(() {
       _showFlash = true;
       _isCountingDown = false;
-      _capturedBytes = captured;
-      _isCaptured = true;
+      _capturedPhotos[_activeCaptureSlot] = captured;
     });
 
     await Future.delayed(const Duration(milliseconds: 200));
-    if (mounted) {
+    if (!mounted) return;
+
+    setState(() {
+      _showFlash = false;
+    });
+
+    // 3. Multi-slot progression
+    if (_activeCaptureSlot + 1 < _slotCount) {
       setState(() {
-        _showFlash = false;
+        _activeCaptureSlot++;
+        _isWaitingNextPose = true;
+      });
+
+      // Brief breather so users can switch pose (1.8s)
+      await Future.delayed(const Duration(milliseconds: 1800));
+      if (!mounted) return;
+
+      setState(() {
+        _isWaitingNextPose = false;
+      });
+
+      // Automatically start countdown for next pose
+      _startCountdown();
+    } else {
+      // All poses captured!
+      setState(() {
+        _isCaptured = true;
       });
     }
   }
@@ -207,9 +236,11 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
   void _resetSession() {
     setState(() {
       _isCaptured = false;
-      _capturedBytes = null;
+      _activeCaptureSlot = 0;
+      _capturedPhotos = List.filled(_slotCount, null);
       _selectedFilterIndex = 0;
       _isCountingDown = false;
+      _isWaitingNextPose = false;
       _countdownNumber = 3;
       _cameraKey++;
     });
@@ -397,22 +428,29 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Column(
-            children: [
-              // 1. Camera / Photo Viewfinder with Frame Overlay
-              _buildFramedViewfinder(),
-              const SizedBox(height: 16),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: _slotCount == 2 ? 420 : 560,
+              ),
+              child: Column(
+                children: [
+                  // 1. Camera / Photo Viewfinder with Frame Overlay
+                  _buildFramedViewfinder(),
+                  const SizedBox(height: 16),
 
-              // 2. Mode controls depending on state
-              if (!_isCaptured) ...[
-                // Camera source selector & shutter button
-                _buildCaptureControls(),
-              ] else ...[
-                // Filter selector & result action buttons
-                _buildResultControls(),
-              ],
-              const SizedBox(height: 20),
-            ],
+                  // 2. Mode controls depending on state
+                  if (!_isCaptured) ...[
+                    // Camera source selector & shutter button
+                    _buildCaptureControls(),
+                  ] else ...[
+                    // Filter selector & result action buttons
+                    _buildResultControls(),
+                  ],
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -420,6 +458,9 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
   }
 
   Widget _buildFramedViewfinder() {
+    final double frameAspectRatio =
+        _slotCount == 2 ? (720.0 / 1170.0) : (1440.0 / 1380.0);
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -456,29 +497,38 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
                     ],
                     Text(
                       _isCaptured
-                          ? 'FOTO TERSIMPAN'
+                          ? (_slotCount > 1
+                              ? '2 POSE TERSIMPAN • SELESAI'
+                              : 'FOTO TERSIMPAN • SELESAI')
                           : (_isCountingDown
-                              ? 'MENGAMBIL FOTO...'
-                              : 'STUDIO PHOTOBOOTH'),
+                              ? 'MENGAMBIL POSE ${_activeCaptureSlot + 1} DARI $_slotCount...'
+                              : (_isWaitingNextPose
+                                  ? 'GANTI POSE BERIKUTNYA...'
+                                  : 'STUDIO PHOTOBOOTH • $_slotCount POSE')),
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 1.3,
+                        letterSpacing: 1.2,
                         color: AppColors.primaryBlack,
                       ),
                     ),
                   ],
                 ),
-                if (!_isCaptured)
-                  Text(
-                    _isCountingDown ? 'COUNTDOWN' : 'STANDBY',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.8,
-                      color: AppColors.secondaryText,
-                    ),
+                Text(
+                  _isCaptured
+                      ? 'LENGKAP'
+                      : (_isCountingDown
+                          ? 'COUNTDOWN'
+                          : (_isWaitingNextPose ? 'GANTI POSE' : 'STANDBY')),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                    color: _isCountingDown
+                        ? Colors.orangeAccent.shade700
+                        : AppColors.secondaryText,
                   ),
+                ),
               ],
             ),
           ),
@@ -487,9 +537,11 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: AspectRatio(
-              aspectRatio: 1440 / 1380,
+              aspectRatio: frameAspectRatio,
               child: GestureDetector(
-                onTap: !_isCaptured && !_isCountingDown ? _startCountdown : null,
+                onTap: !_isCaptured && !_isCountingDown && !_isWaitingNextPose
+                    ? _startCountdown
+                    : null,
                 child: RepaintBoundary(
                   key: _previewBoundaryKey,
                   child: Container(
@@ -497,39 +549,74 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        // Layer 1: Photo content inside cutout slot (seamless bleed behind frame)
+                        // Layer 1: Photo content inside cutout slots (seamless bleed behind frame)
                         Positioned.fill(
                           child: LayoutBuilder(
                             builder: (context, constraints) {
                               final w = constraints.maxWidth;
                               final h = constraints.maxHeight;
 
-                              // Precise cutout alignment in 1440x1380 space
-                              final photoLeft = w * (120.0 / 1440.0);
-                              final photoTop = h * (120.0 / 1380.0);
-                              final photoWidth = w * (1200.0 / 1440.0);
-                              final photoHeight = h * (896.0 / 1380.0);
-                              final photoRadius = w * (40.0 / 1440.0);
+                              if (_slotCount == 2) {
+                                // Slot 1: Top cut (64, 64, 592, 441 in 720x1170 space)
+                                final s1Left = w * (64.0 / 720.0);
+                                final s1Top = h * (64.0 / 1170.0);
+                                final s1Width = w * (592.0 / 720.0);
+                                final s1Height = h * (441.0 / 1170.0);
 
-                              return Stack(
-                                children: [
-                                  Positioned(
-                                    left: photoLeft,
-                                    top: photoTop,
-                                    width: photoWidth,
-                                    height: photoHeight,
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(photoRadius),
-                                      child: _buildPhotoContent(),
+                                // Slot 2: Bottom cut (64, 544, 592, 441 in 720x1170 space)
+                                final s2Left = w * (64.0 / 720.0);
+                                final s2Top = h * (544.0 / 1170.0);
+                                final s2Width = w * (592.0 / 720.0);
+                                final s2Height = h * (441.0 / 1170.0);
+
+                                return Stack(
+                                  children: [
+                                    Positioned(
+                                      left: s1Left,
+                                      top: s1Top,
+                                      width: s1Width,
+                                      height: s1Height,
+                                      child: ClipRect(
+                                        child: _buildSlotContent(0),
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              );
+                                    Positioned(
+                                      left: s2Left,
+                                      top: s2Top,
+                                      width: s2Width,
+                                      height: s2Height,
+                                      child: ClipRect(
+                                        child: _buildSlotContent(1),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              } else {
+                                // 1-photo single cutout in 1440x1380 space
+                                final photoLeft = w * (120.0 / 1440.0);
+                                final photoTop = h * (120.0 / 1380.0);
+                                final photoWidth = w * (1200.0 / 1440.0);
+                                final photoHeight = h * (896.0 / 1380.0);
+
+                                return Stack(
+                                  children: [
+                                    Positioned(
+                                      left: photoLeft,
+                                      top: photoTop,
+                                      width: photoWidth,
+                                      height: photoHeight,
+                                      child: ClipRect(
+                                        child: _buildSlotContent(0),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }
                             },
                           ),
                         ),
 
-                        // Layer 2: Frame Overlay
+                        // Layer 2: Frame Overlay (transparent cutouts reveal photo underneath)
                         Positioned.fill(
                           child: Image.asset(
                             widget.frame['asset']!,
@@ -558,10 +645,11 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Container(
-                                        width: 100,
-                                        height: 100,
+                                        width: 90,
+                                        height: 90,
                                         decoration: BoxDecoration(
-                                          color: AppColors.primaryBlack.withValues(alpha: 0.85),
+                                          color: AppColors.primaryBlack
+                                              .withValues(alpha: 0.85),
                                           shape: BoxShape.circle,
                                           border: Border.all(
                                             color: AppColors.secondaryLime,
@@ -580,21 +668,110 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
                                           child: Text(
                                             '$_countdownNumber',
                                             style: GoogleFonts.plusJakartaSans(
-                                              fontSize: 54,
+                                              fontSize: 50,
                                               fontWeight: FontWeight.w900,
                                               color: AppColors.secondaryLime,
                                             ),
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(height: 14),
-                                      Text(
-                                        'Bersiap & Tersenyum!',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                          letterSpacing: 0.5,
+                                      const SizedBox(height: 12),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 14, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primaryBlack
+                                              .withValues(alpha: 0.75),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Text(
+                                          _slotCount > 1
+                                              ? 'Pose ${_activeCaptureSlot + 1} dari $_slotCount: Bersiap!'
+                                              : 'Bersiap & Tersenyum!',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                            letterSpacing: 0.4,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                        // Layer 3b: Pose transition breather overlay
+                        if (_isWaitingNextPose)
+                          Positioned.fill(
+                            child: Container(
+                              color: Colors.black.withValues(alpha: 0.55),
+                              child: Center(
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 24),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 18, vertical: 14),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryBlack,
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(
+                                      color: AppColors.secondaryLime,
+                                      width: 2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.secondaryLime
+                                            .withValues(alpha: 0.35),
+                                        blurRadius: 20,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.secondaryLime,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.check,
+                                          color: AppColors.primaryBlack,
+                                          size: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Flexible(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Pose 1 Tersimpan!',
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 13.5,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              'Ganti gayamu untuk Pose 2...',
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                color: AppColors.secondaryLime,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
@@ -628,19 +805,32 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  _isCaptured ? Icons.check_circle_outline_rounded : Icons.touch_app_outlined,
+                  _isCaptured
+                      ? Icons.check_circle_outline_rounded
+                      : Icons.touch_app_outlined,
                   size: 15,
                   color: AppColors.secondaryText,
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  _isCaptured
-                      ? 'Foto berhasil dijepret! Pilih filter di bawah.'
-                      : 'Ketuk area foto atau tombol di bawah untuk jepret.',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11.5,
-                    color: AppColors.secondaryText,
-                    fontWeight: FontWeight.w500,
+                Flexible(
+                  child: Text(
+                    _isCaptured
+                        ? (_slotCount > 1
+                            ? 'Kedua pose berhasil dijepret! Pilih filter di bawah.'
+                            : 'Foto berhasil dijepret! Pilih filter di bawah.')
+                        : (_isWaitingNextPose
+                            ? 'Pose 1 siap! Menyiapkan pose ke-2...'
+                            : (_isCountingDown
+                                ? 'Tersenyum ke kamera... 3, 2, 1!'
+                                : (_slotCount > 1
+                                    ? 'Ketuk tombol di bawah untuk jepret 2 pose beruntun.'
+                                    : 'Ketuk area foto atau tombol di bawah untuk jepret.'))),
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11.5,
+                      color: AppColors.secondaryText,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -651,40 +841,18 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
     );
   }
 
-  Widget _buildPhotoContent() {
+  Widget _buildSlotContent(int slotIndex) {
     final filter = _getCurrentColorFilter();
+    final photoBytes =
+        slotIndex < _capturedPhotos.length ? _capturedPhotos[slotIndex] : null;
 
-    // 1. Result Mode: Show captured photo from camera with active filter
-    if (_isCaptured) {
-      Widget imageWidget;
-      if (_capturedBytes != null) {
-        imageWidget = Image.memory(
-          _capturedBytes!,
-          fit: BoxFit.cover,
-          alignment: Alignment.center,
-        );
-      } else {
-        imageWidget = Container(
-          color: const Color(0xFF1A1A1A),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.check_circle_outline_rounded, size: 42, color: AppColors.secondaryLime),
-                const SizedBox(height: 10),
-                Text(
-                  'Foto Berhasil Dijepret',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }
+    // 1. Result / Frozen Mode: Display captured photo for this slot
+    if (photoBytes != null) {
+      Widget imageWidget = Image.memory(
+        photoBytes,
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+      );
 
       if (filter != null) {
         return ColorFiltered(
@@ -695,74 +863,146 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
       return imageWidget;
     }
 
-    // 2. Live Capture Mode: Direct live camera stream
-    if (_cameraHelper.isInitialized) {
-      return HtmlElementView(
-        key: ValueKey('live-camera-$_cameraKey'),
-        viewType: _cameraHelper.viewType,
-        onPlatformViewCreated: (_) {
-          _cameraHelper.resumeCamera();
-        },
+    // 2. If session ended but no photo bytes (fallback)
+    if (_isCaptured) {
+      return Container(
+        color: const Color(0xFF1A1A1A),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.check_circle_outline_rounded,
+                size: 36,
+                color: AppColors.secondaryLime,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Pose ${slotIndex + 1} Berhasil',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
-    // Clean Studio Viewfinder Standby (No sample photo!)
+    // 3. Live Capture Mode: Is this slot currently active?
+    if (slotIndex == _activeCaptureSlot) {
+      if (_cameraHelper.isInitialized) {
+        return HtmlElementView(
+          key: ValueKey('live-camera-$_cameraKey-$slotIndex'),
+          viewType: _cameraHelper.viewType,
+          onPlatformViewCreated: (_) {
+            _cameraHelper.resumeCamera();
+          },
+        );
+      }
+
+      // Standby / Loading state for active slot
+      return Container(
+        color: const Color(0xFF121212),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_isCameraLoading) ...[
+                const SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: CircularProgressIndicator(
+                    color: AppColors.secondaryLime,
+                    strokeWidth: 2.8,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Mengaktifkan Kamera...',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ] else ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.videocam_outlined,
+                    size: 28,
+                    color: AppColors.secondaryLime,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  _slotCount > 1
+                      ? 'Kamera Standby (Pose ${slotIndex + 1})'
+                      : 'Kamera Langsung Standby',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Ketuk tombol jepret untuk mulai',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    fontSize: 10.5,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 4. Inactive slot waiting for turn (e.g. Pose 2 while Pose 1 is in progress)
     return Container(
-      color: const Color(0xFF121212),
+      color: const Color(0xFF1E1E1E),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (_isCameraLoading) ...[
-              const SizedBox(
-                width: 32,
-                height: 32,
-                child: CircularProgressIndicator(
-                  color: AppColors.secondaryLime,
-                  strokeWidth: 3,
-                ),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.06),
+                shape: BoxShape.circle,
               ),
-              const SizedBox(height: 14),
-              Text(
-                'Mengaktifkan Kamera...',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.3,
-                ),
+              child: const Icon(
+                Icons.hourglass_empty_rounded,
+                size: 22,
+                color: AppColors.secondaryLime,
               ),
-            ] else ...[
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.videocam_outlined,
-                  size: 32,
-                  color: AppColors.secondaryLime,
-                ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Pose ${slotIndex + 1}',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Kamera Langsung Standby',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Menunggu giliran...',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 10.5,
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Ketuk tombol jepret untuk mengambil foto',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white.withValues(alpha: 0.55),
-                  fontSize: 11,
-                ),
-              ),
-            ],
+            ),
           ],
         ),
       ),
@@ -770,13 +1010,37 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
   }
 
   Widget _buildCaptureControls() {
+    String buttonText;
+    if (_slotCount == 1) {
+      buttonText = 'Ambil Foto (3 Detik)';
+    } else {
+      if (_activeCaptureSlot == 0) {
+        buttonText = 'Mulai Sesi (Pose 1 & 2)';
+      } else {
+        buttonText = 'Ambil Pose 2';
+      }
+    }
+
     return Column(
       children: [
-        const SizedBox(height: 8),
+        // Multi-pose step indicators
+        if (_slotCount > 1) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildPoseStepPill(0, 'Pose 1'),
+              const SizedBox(width: 8),
+              _buildPoseStepPill(1, 'Pose 2'),
+            ],
+          ),
+          const SizedBox(height: 14),
+        ],
 
         // Shutter Button
         GestureDetector(
-          onTap: !_isCountingDown ? _startCountdown : null,
+          onTap: !_isCountingDown && !_isWaitingNextPose
+              ? _startCountdown
+              : null,
           child: Column(
             children: [
               Container(
@@ -819,7 +1083,7 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
               ),
               const SizedBox(height: 10),
               Text(
-                'Ambil Foto (3 Detik)',
+                buttonText,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,
@@ -830,6 +1094,52 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPoseStepPill(int index, String label) {
+    final bool isDone = _capturedPhotos[index] != null;
+    final bool isActive = _activeCaptureSlot == index && !isDone;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDone
+            ? AppColors.secondaryLime
+            : (isActive ? AppColors.primaryBlack : AppColors.surfaceMuted),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isActive || isDone
+              ? AppColors.primaryBlack
+              : AppColors.border,
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isDone
+                ? Icons.check_circle_rounded
+                : (isActive ? Icons.camera_alt_rounded : Icons.circle_outlined),
+            size: 13,
+            color: isDone
+                ? AppColors.primaryBlack
+                : (isActive ? AppColors.secondaryLime : AppColors.secondaryText),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: isDone
+                  ? AppColors.primaryBlack
+                  : (isActive ? AppColors.white : AppColors.secondaryText),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
