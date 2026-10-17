@@ -65,7 +65,7 @@ class WebCameraHelper {
   Future<void> resumeCamera() async {
     if (!kIsWeb) return;
     try {
-      if (videoElement != null) {
+      if (videoElement != null && mediaStream != null) {
         final tracks = mediaStream?.getVideoTracks() ?? [];
         final hasLiveTrack = tracks.any((t) => t.readyState == 'live');
 
@@ -78,7 +78,9 @@ class WebCameraHelper {
           videoElement!.srcObject = mediaStream;
         }
 
-        await videoElement!.play();
+        if (videoElement!.paused) {
+          await videoElement!.play();
+        }
       } else {
         await startCamera();
       }
