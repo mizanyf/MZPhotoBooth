@@ -11,13 +11,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
-  int _activePreviewIndex = 0;
-  final List<String> _frameAssets = [
-    'assets/frame/frame1foto/3.png',
-    'assets/frame/frame1foto/1.png',
-    'assets/frame/frame1foto/2.png',
-  ];
-
   late final AnimationController _fadeController;
   late final Animation<double> _fadeAnimation;
 
@@ -26,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     super.initState();
     _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 600),
     );
     _fadeAnimation = CurvedAnimation(
       parent: _fadeController,
@@ -49,14 +42,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       builder: (BuildContext context) {
         return Container(
           padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: AppColors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
+                color: Colors.black12,
                 blurRadius: 24,
-                offset: const Offset(0, -4),
+                offset: Offset(0, -4),
               ),
             ],
           ),
@@ -76,11 +69,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
               const SizedBox(height: 24),
               Text(
-                'MZ PHOTOBOOTH',
+                'MZ PHOTOBOOTH STUDIO',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
+                  letterSpacing: 1.1,
                   color: AppColors.primaryBlack,
                 ),
               ),
@@ -180,369 +173,200 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isDesktop = constraints.maxWidth >= 840;
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth >= 840;
 
-              return Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: isDesktop ? 1080 : 540,
-                  ),
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isDesktop ? 32 : 20,
-                      vertical: isDesktop ? 24 : 14,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // 1. Header Section (without stabilo dot)
-                        _buildHeader(),
-                        SizedBox(height: isDesktop ? 36 : 26),
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                children: [
+                  // 1. Top Hero Banner (Curved bottom, sleek dark background, circular logo, title, and lime CTA)
+                  _buildHeroBanner(context, isDesktop),
 
-                        // 2. Hero + Preview Section (side-by-side on desktop, vertical on mobile)
-                        if (isDesktop)
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              // Left Column: Hero Text + Primary CTA
-                              Expanded(
-                                flex: 5,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildHeroText(isDesktop: true),
-                                    const SizedBox(height: 32),
-                                    _buildPrimaryCTA(),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 48),
-                              // Right Column: Featured Photo Preview Card
-                              Expanded(
-                                flex: 5,
-                                child: _buildPreviewCard(),
-                              ),
-                            ],
-                          )
-                        else ...[
-                          _buildHeroText(isDesktop: false),
-                          const SizedBox(height: 22),
-                          _buildPreviewCard(),
-                        ],
-                        SizedBox(height: isDesktop ? 44 : 28),
-
-                        // 3. Preparation & Three-Step Guide (side-by-side on desktop, vertical on mobile)
-                        _buildStepSection(isDesktop: isDesktop),
-                        SizedBox(height: isDesktop ? 36 : 28),
-
-                        // 4. Primary CTA for mobile (desktop has CTA in hero row)
-                        if (!isDesktop) ...[
-                          _buildPrimaryCTA(),
-                          const SizedBox(height: 20),
-                        ],
-
-                        // 5. Subtle Footer
-                        _buildFooter(),
-                        const SizedBox(height: 12),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
+                  // 2. Three Steps Section ("Tiga langkah saja")
+                  _buildStepsSection(isDesktop),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Left Side: MZ Photobooth Logo + Title (no stabilo dot)
-        Expanded(
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.secondaryLime,
-                  borderRadius: BorderRadius.circular(13),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.secondaryLime.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                    const BoxShadow(
-                      color: AppColors.cardShadow,
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Padding(
-                  padding: const EdgeInsets.all(2.0),
-                  child: Image.asset(
-                    'assets/logo/MZP.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Center(
-                        child: Icon(
-                          Icons.photo_camera_rounded,
-                          color: AppColors.primaryBlack,
-                          size: 24,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'MZ PHOTOBOOTH',
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.1,
-                    color: AppColors.primaryBlack,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+  Widget _buildHeroBanner(BuildContext context, bool isDesktop) {
+    final topPadding = MediaQuery.of(context).padding.top;
 
-        const SizedBox(width: 12),
-
-        // Right Side: Minimal Information Button
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(22),
-            onTap: _showInfoDialog,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.border),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.info_outline_rounded,
-                color: AppColors.primaryBlack,
-                size: 18,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeroText({bool isDesktop = false}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Eyebrow text without stabilo dot
-        Text(
-          'YOUR PERSONAL PHOTOBOOTH',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: isDesktop ? 13 : 11.5,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.6,
-            color: AppColors.secondaryText,
-          ),
-        ),
-        SizedBox(height: isDesktop ? 16 : 12),
-
-        // Main Heading
-        Text(
-          'Your moment,\nyour frame.',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: isDesktop ? 44 : 34,
-            height: 1.12,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.6,
-            color: AppColors.primaryBlack,
-          ),
-        ),
-        SizedBox(height: isDesktop ? 16 : 12),
-
-        // Indonesian Supporting Text
-        Text(
-          'Abadikan momenmu, pilih gaya favoritmu, dan simpan hasilnya.',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: isDesktop ? 16 : 14.5,
-            height: 1.5,
-            color: AppColors.secondaryText,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPreviewCard() {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border),
+        color: const Color(0xFF101115),
+        borderRadius: const BorderRadius.vertical(
+          bottom: Radius.circular(36),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 28,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
+      child: Stack(
         children: [
-          // Top Label Bar
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'MZ PHOTOBOOTH LAB',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.3,
-                    color: AppColors.primaryBlack,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondaryLime,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.secondaryLime.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    'CONTOH HASIL',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.8,
-                      color: AppColors.primaryBlack,
-                    ),
-                  ),
-                ),
-              ],
+          // Subtle ambient lime accent glow in the background
+          Positioned(
+            top: -40,
+            right: -40,
+            child: Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.secondaryLime.withValues(alpha: 0.06),
+              ),
             ),
           ),
 
-          // Frame preview container with real example photo inside frame
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: AspectRatio(
-              aspectRatio: 1440 / 1380,
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.zero,
+          // Info button in top right
+          Positioned(
+            top: topPadding + 12,
+            right: 18,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: _showInfoDialog,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.14),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.info_outline_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                 ),
-                child: Stack(
-                  fit: StackFit.expand,
+              ),
+            ),
+          ),
+
+          // Banner Content
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              24,
+              topPadding + 28,
+              24,
+              isDesktop ? 44 : 36,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 580),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Real photo example from assets/example/
-                    Positioned.fill(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final w = constraints.maxWidth;
-                          final h = constraints.maxHeight;
-
-                          final photoLeft = w * (120.0 / 1440.0);
-                          final photoTop = h * (120.0 / 1380.0);
-                          final photoWidth = w * (1200.0 / 1440.0);
-                          final photoHeight = h * (896.0 / 1380.0);
-
-                          return Stack(
-                            children: [
-                              Positioned(
-                                left: photoLeft,
-                                top: photoTop,
-                                width: photoWidth,
-                                height: photoHeight,
-                                child: ClipRect(
-                                  child: Image.asset(
-                                    'assets/example/62e6af186f4ee.jpg',
-                                    fit: BoxFit.cover,
-                                    alignment: const Alignment(0, -0.35),
-                                    errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          color: Colors.grey.shade200,
-                                          child: const Center(
-                                            child: Icon(
-                                              Icons.photo_rounded,
-                                              color: AppColors.secondaryText,
-                                              size: 36,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ],
+                    // Circular Logo Badge (lime background, zero white, smooth circle, no square)
+                    Container(
+                      width: 76,
+                      height: 76,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.secondaryLime.withValues(alpha: 0.35),
+                            blurRadius: 20,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/logo/MZP.png',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Center(
+                              child: Icon(
+                                Icons.photo_camera_rounded,
+                                color: AppColors.primaryBlack,
+                                size: 28,
+                              ),
                             );
                           },
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 20),
 
-                    // Frame Overlay
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      child: Image.asset(
-                        _frameAssets[_activePreviewIndex],
-                        key: ValueKey(_activePreviewIndex),
-                        fit: BoxFit.fill,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Center(
-                            child: Icon(
-                              Icons.image_outlined,
-                              size: 48,
-                              color: AppColors.secondaryText,
+                    // Big Bold Headline: PHOTOBOOTH STUDIO
+                    Text(
+                      'PHOTOBOOTH STUDIO',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: isDesktop ? 32 : 25,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.3,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Description text (Starts with "Pilih bingkai terlebih dahulu")
+                    Text(
+                      'Pilih bingkai terlebih dahulu, ambil pose terbaikmu di depan kamera, lalu simpan hasilnya secara instan ke perangkatmu.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: isDesktop ? 14 : 13,
+                        height: 1.55,
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: 26),
+
+                    // Pill CTA Button (Hijau Stabilo)
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.secondaryLime,
+                        foregroundColor: AppColors.primaryBlack,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(32),
+                        ),
+                        shadowColor: AppColors.secondaryLime,
+                      ),
+                      onPressed: _navigateToFrameSelection,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.photo_camera_rounded,
+                            size: 19,
+                            color: AppColors.primaryBlack,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'MULAI SEKARANG',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.6,
+                              color: AppColors.primaryBlack,
                             ),
-                          );
-                        },
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -550,367 +374,182 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
           ),
-
-          // Bottom Frame Selector (Centered 01, 02, 03)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(_frameAssets.length, (index) {
-                  final isActive = _activePreviewIndex == index;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _activePreviewIndex = index;
-                      });
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOutCubic,
-                      margin: EdgeInsets.only(left: index == 0 ? 0 : 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isActive
-                            ? AppColors.primaryBlack
-                            : AppColors.surfaceMuted,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: isActive
-                              ? AppColors.primaryBlack
-                              : AppColors.border,
-                        ),
-                        boxShadow: isActive
-                            ? [
-                                BoxShadow(
-                                  color: AppColors.primaryBlack
-                                      .withValues(alpha: 0.2),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Text(
-                        '0${index + 1}',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: isActive
-                              ? AppColors.secondaryLime
-                              : AppColors.secondaryText,
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildStepSection({bool isDesktop = false}) {
+  Widget _buildStepsSection(bool isDesktop) {
     final step1 = _buildStepCard(
-      stepNumber: '01',
-      title: 'Pilih Frame',
-      description: 'Tentukan desain favoritmu.',
-      icon: Icons.layers_outlined,
-      isHighlight: true,
+      number: '1',
+      icon: Icons.tune_rounded,
+      title: 'Atur dulu',
+      description: 'Pilih orientasi & layout frame 1 atau 2 foto sesuai konsep gayamu.',
     );
     final step2 = _buildStepCard(
-      stepNumber: '02',
-      title: 'Ambil Foto',
-      description: 'Gunakan kamera depan atau belakang.',
-      icon: Icons.camera_alt_outlined,
+      number: '2',
+      icon: Icons.photo_camera_rounded,
+      title: 'Ambil Pose',
+      description: 'Posisikan webcam, pasang senyum terbaik, dan jepret dengan hitungan mundur otomatis.',
     );
     final step3 = _buildStepCard(
-      stepNumber: '03',
+      number: '3',
+      icon: Icons.auto_awesome_rounded,
       title: 'Simpan Hasil',
-      description: 'Pilih filter dan unduh fotomu.',
-      icon: Icons.file_download_outlined,
+      description: 'Pilih filter warna estetik favoritmu dan unduh hasil photostrip langsung secara instan.',
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Section Title
-        Text(
-          'Siap untuk berfoto?',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: isDesktop ? 26 : 22,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.3,
-            color: AppColors.primaryBlack,
-          ),
-        ),
-        const SizedBox(height: 5),
-
-        // Supporting Text
-        Text(
-          'Tiga langkah sederhana untuk hasil yang berkesan.',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: isDesktop ? 14.5 : 13.5,
-            color: AppColors.secondaryText,
-          ),
-        ),
-        SizedBox(height: isDesktop ? 22 : 18),
-
-        // Three Step Cards (Row on desktop, Column on mobile)
-        if (isDesktop)
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(child: step1),
-                const SizedBox(width: 14),
-                Expanded(child: step2),
-                const SizedBox(width: 14),
-                Expanded(child: step3),
-              ],
-            ),
-          )
-        else
-          Column(
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: isDesktop ? 880 : 520),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+          child: Column(
             children: [
-              step1,
-              const SizedBox(height: 10),
-              step2,
-              const SizedBox(height: 10),
-              step3,
+              // Section Title: "Tiga langkah saja"
+              Text(
+                'Tiga langkah saja',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryBlack,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Responsive Cards: Row on Desktop, Column on Mobile
+              if (isDesktop)
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: step1),
+                      const SizedBox(width: 16),
+                      Expanded(child: step2),
+                      const SizedBox(width: 16),
+                      Expanded(child: step3),
+                    ],
+                  ),
+                )
+              else
+                Column(
+                  children: [
+                    step1,
+                    const SizedBox(height: 14),
+                    step2,
+                    const SizedBox(height: 14),
+                    step3,
+                  ],
+                ),
             ],
           ),
-      ],
+        ),
+      ),
     );
   }
 
   Widget _buildStepCard({
-    required String stepNumber,
+    required String number,
+    required IconData icon,
     required String title,
     required String description,
-    required IconData icon,
-    bool isHighlight = false,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isHighlight ? AppColors.primaryBlack : AppColors.border,
-          width: isHighlight ? 1.5 : 1.0,
-        ),
-        boxShadow: [
-          if (isHighlight)
-            BoxShadow(
-              color: AppColors.secondaryLime.withValues(alpha: 0.15),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            )
-          else
-            const BoxShadow(
-              color: AppColors.cardShadow,
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Number badge
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.primaryBlack,
-              shape: BoxShape.circle,
-              border: isHighlight
-                  ? Border.all(color: AppColors.secondaryLime, width: 2.5)
-                  : null,
-              boxShadow: isHighlight
-                  ? [
-                      BoxShadow(
-                        color: AppColors.secondaryLime.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Center(
-              child: Text(
-                stepNumber,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.bold,
-                  color: isHighlight
-                      ? AppColors.secondaryLime
-                      : AppColors.white,
-                ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _navigateToFrameSelection,
+        borderRadius: BorderRadius.circular(24),
+        hoverColor: AppColors.secondaryLime.withValues(alpha: 0.1),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 22),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.border),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.cardShadow,
+                blurRadius: 10,
+                offset: Offset(0, 3),
               ),
-            ),
+            ],
           ),
-          const SizedBox(width: 14),
+          child: Column(
+            children: [
+              // Top row with step number badge on top-left
+              Row(
+                children: [
+                  Container(
+                    width: 26,
+                    height: 26,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryBlack,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        number,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                ],
+              ),
+              const SizedBox(height: 4),
 
-          // Texts
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
+              // Center circular icon
+              Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.6),
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    icon,
+                    size: 28,
                     color: AppColors.primaryBlack,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  description,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Icon indicator
-          Container(
-            padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(
-              color: isHighlight
-                  ? AppColors.secondaryLime.withValues(alpha: 0.35)
-                  : AppColors.surfaceMuted,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              size: 18,
-              color: AppColors.primaryBlack,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPrimaryCTA() {
-    return Container(
-      width: double.infinity,
-      height: 60,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlack.withValues(alpha: 0.2),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryBlack,
-          foregroundColor: AppColors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-        ),
-        onPressed: _navigateToFrameSelection,
-        child: Row(
-          children: [
-            // Lime circular icon background
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: AppColors.secondaryLime,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.secondaryLime.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
               ),
-              child: const Icon(
-                Icons.camera_alt,
-                color: AppColors.primaryBlack,
-                size: 18,
-              ),
-            ),
-            const SizedBox(width: 14),
+              const SizedBox(height: 14),
 
-            // Button label
-            Expanded(
-              child: Text(
-                'Mulai Sesi Foto',
-                overflow: TextOverflow.ellipsis,
+              // Title
+              Text(
+                title,
+                textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.3,
-                  color: AppColors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryBlack,
                 ),
               ),
-            ),
+              const SizedBox(height: 6),
 
-            const SizedBox(width: 8),
-
-            // Supporting indicator on right (compact and responsive)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+              // Description
+              Text(
+                description,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  height: 1.45,
+                  color: AppColors.secondaryText,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Mulai',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.white.withValues(alpha: 0.8),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 12,
-                    color: AppColors.secondaryLime,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFooter() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(
-          'SIMPLE MOMENTS, BEAUTIFULLY FRAMED.',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 10.5,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.8,
-            color: AppColors.secondaryText.withValues(alpha: 0.8),
+            ],
           ),
         ),
       ),

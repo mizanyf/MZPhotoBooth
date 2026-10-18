@@ -544,50 +544,9 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
   // STEPPER PROGRESS BAR
   // --------------------------------------------------------------------------
   Widget _buildJourneyStepper() {
-    if (_slotCount == 1) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            _buildStepItem(
-              stepNumber: '1',
-              title: 'Foto Kamera',
-              isActive: _sessionMode == SessionMode.capture,
-              isCompleted: _sessionMode == SessionMode.finalResult,
-            ),
-            Expanded(
-              child: Container(
-                height: 2,
-                color: _sessionMode == SessionMode.finalResult
-                    ? AppColors.primaryBlack
-                    : AppColors.border,
-              ),
-            ),
-            _buildStepItem(
-              stepNumber: '2',
-              title: 'Hasil Frame',
-              isActive: _sessionMode == SessionMode.finalResult,
-              isCompleted: false,
-            ),
-          ],
-        ),
-      );
-    }
-
-    // 2-slot flow: Foto 1 -> Foto 2 -> Hasil Frame
-    final bool isFoto1Done = _capturedPhotos[0] != null;
-    final bool isFoto2Done = _capturedPhotos[1] != null;
-
-    final bool isStep1Active = (_sessionMode == SessionMode.capture && _activeCaptureSlot == 0) ||
-        (_sessionMode == SessionMode.reviewPose && _reviewingSlotIndex == 0);
-    final bool isStep2Active = (_sessionMode == SessionMode.capture && _activeCaptureSlot == 1) ||
-        (_sessionMode == SessionMode.reviewPose && _reviewingSlotIndex == 1);
-    final bool isStep3Active = _sessionMode == SessionMode.finalResult;
+    final bool isCaptureOrReview =
+        _sessionMode == SessionMode.capture || _sessionMode == SessionMode.reviewPose;
+    final bool isFinalResult = _sessionMode == SessionMode.finalResult;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -600,32 +559,20 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
         children: [
           _buildStepItem(
             stepNumber: '1',
-            title: 'Foto 1',
-            isActive: isStep1Active,
-            isCompleted: isFoto1Done && !isStep1Active,
+            title: 'Foto Kamera',
+            isActive: isCaptureOrReview,
+            isCompleted: isFinalResult,
           ),
           Expanded(
             child: Container(
               height: 2,
-              color: isFoto1Done ? AppColors.primaryBlack : AppColors.border,
+              color: isFinalResult ? AppColors.primaryBlack : AppColors.border,
             ),
           ),
           _buildStepItem(
             stepNumber: '2',
-            title: 'Foto 2',
-            isActive: isStep2Active,
-            isCompleted: isFoto2Done && !isStep2Active,
-          ),
-          Expanded(
-            child: Container(
-              height: 2,
-              color: isFoto2Done ? AppColors.primaryBlack : AppColors.border,
-            ),
-          ),
-          _buildStepItem(
-            stepNumber: '3',
             title: 'Hasil Frame',
-            isActive: isStep3Active,
+            isActive: isFinalResult,
             isCompleted: false,
           ),
         ],
@@ -719,34 +666,24 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          // Header Bar inside card (No standby/countdown badge)
+          // Header Bar inside card (No dot, text split left & right)
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 14, 18, 10),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: _isCountingDown ? Colors.redAccent : Colors.green,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: (_isCountingDown ? Colors.redAccent : Colors.green)
-                            .withValues(alpha: 0.5),
-                        blurRadius: 6,
-                      ),
-                    ],
+                Text(
+                  _slotCount > 1 ? 'KAMERA LIVE' : 'KAMERA LIVE PHOTOBOOTH',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                    color: AppColors.primaryBlack,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _slotCount > 1
-                        ? 'KAMERA LIVE • POSE ${_activeCaptureSlot + 1} DARI $_slotCount'
-                        : 'KAMERA LIVE PHOTOBOOTH',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                if (_slotCount > 1)
+                  Text(
+                    'POSE ${_activeCaptureSlot + 1} DARI $_slotCount',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w800,
@@ -754,7 +691,6 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
                       color: AppColors.primaryBlack,
                     ),
                   ),
-                ),
               ],
             ),
           ),

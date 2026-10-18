@@ -423,7 +423,6 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
     final slotCount = section['slotCount'] as String;
     final title = section['title'] as String;
     final subtitle = section['subtitle'] as String;
-    final badge = section['badge'] as String;
     final isReady = section['isReady'] as bool;
     final icon = (section['icon'] as IconData?) ?? Icons.crop_original_rounded;
     final frames = section['frames'] as List;
@@ -517,28 +516,6 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
 
                     const SizedBox(width: 8),
 
-                    // Badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isReady
-                            ? AppColors.secondaryLime
-                            : AppColors.surfaceMuted,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        badge,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primaryBlack,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(width: 8),
-
                     // Animated Chevron (Rotates downwards/upwards)
                     AnimatedRotation(
                       turns: isExpanded ? 0.5 : 0.0,
@@ -583,9 +560,7 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  isReady
-                                      ? 'PILIH DESAIN FRAME:'
-                                      : 'SLOT FRAME SEGERA HADIR:',
+                                  'PILIH DESAIN FRAME:',
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w800,
@@ -832,26 +807,6 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
               ),
             ),
             const SizedBox(height: 8),
-
-            // Slot Pill Tag
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.secondaryLime.withValues(alpha: 0.4)
-                    : AppColors.surfaceMuted,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                slots,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primaryBlack,
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
 
             // Frame Title
             Text(
