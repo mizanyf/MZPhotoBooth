@@ -270,35 +270,8 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
   }
 
   // --- Actions in Review Mode ---
-  void _retakeCurrentReviewPose() {
-    setState(() {
-      _capturedPhotos[_reviewingSlotIndex] = null;
-      _activeCaptureSlot = _reviewingSlotIndex;
-      _sessionMode = SessionMode.capture;
-      _isCountingDown = false;
-    });
-    _cameraHelper.resumeCamera();
-  }
-
-  void _proceedFromReviewPose() {
-    if (_reviewingSlotIndex + 1 < _slotCount) {
-      // Move to next pose (e.g. Pose 2)
-      setState(() {
-        _activeCaptureSlot = _reviewingSlotIndex + 1;
-        _sessionMode = SessionMode.capture;
-        _isCountingDown = false;
-      });
-      _cameraHelper.resumeCamera();
-    } else {
-      // All poses reviewed: move to final framed result!
-      setState(() {
-        _sessionMode = SessionMode.finalResult;
-      });
-    }
-  }
-
-  // --- Actions in Final Result Mode ---
-  void _retakePoseFromFinalResult(int slotIndex) {
+  void _retakePose(int slotIndex) {
+    _countdownTimer?.cancel();
     setState(() {
       _capturedPhotos[slotIndex] = null;
       _activeCaptureSlot = slotIndex;
@@ -307,6 +280,39 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
     });
     _cameraHelper.resumeCamera();
   }
+
+  void _retakeCurrentReviewPose() {
+    _retakePose(_reviewingSlotIndex);
+  }
+
+  void _proceedFromReviewPose() {
+    final bool allPhotosReady = _slotCount > 1 &&
+        _capturedPhotos.length >= _slotCount &&
+        _capturedPhotos.every((p) => p != null);
+
+    if (allPhotosReady) {
+      setState(() {
+        _sessionMode = SessionMode.finalResult;
+      });
+      return;
+    }
+
+    final int nextEmptySlot = _capturedPhotos.indexWhere((p) => p == null);
+    if (nextEmptySlot != -1) {
+      setState(() {
+        _activeCaptureSlot = nextEmptySlot;
+        _sessionMode = SessionMode.capture;
+        _isCountingDown = false;
+      });
+      _cameraHelper.resumeCamera();
+    } else {
+      setState(() {
+        _sessionMode = SessionMode.finalResult;
+      });
+    }
+  }
+
+  // --- Actions in Final Result Mode ---
 
   void _resetEntireSession() {
     setState(() {
@@ -1282,68 +1288,143 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
     );
   }
 
-  Widget _buildReviewPoseControls() {
-    final bool isPose1Review = _reviewingSlotIndex == 0;
-
-    return Column(
-      children: [
-        // Mini preview of both photos if in Pose 2 review
-        if (!isPose1Review) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
+  Widget _buildDualPoseBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.cardShadow,
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Thumb 1 + Pose 1 + Retake Button
+          Flexible(
+            child: _buildPoseRetakeChip(
+              slotIndex: 0,
+              label: 'Pose 1',
+              photoBytes: _capturedPhotos[0],
             ),
+          ),
+          // Plus separator
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: Icon(
+              Icons.add_rounded,
+              size: 18,
+              color: AppColors.secondaryText,
+            ),
+          ),
+          // Thumb 2 + Pose 2 + Retake Button
+          Flexible(
+            child: _buildPoseRetakeChip(
+              slotIndex: 1,
+              label: 'Pose 2',
+              photoBytes: _capturedPhotos[1],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPoseRetakeChip({
+    required int slotIndex,
+    required String label,
+    required Uint8List? photoBytes,
+  }) {
+    return Tooltip(
+      message: 'Take ulang $label',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _retakePose(slotIndex),
+          borderRadius: BorderRadius.circular(12),
+          hoverColor: AppColors.secondaryLime.withValues(alpha: 0.15),
+          splashColor: AppColors.secondaryLime.withValues(alpha: 0.25),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Thumb 1
+                // Thumb
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: SizedBox(
-                    width: 48,
-                    height: 36,
-                    child: _capturedPhotos[0] != null
-                        ? Image.memory(_capturedPhotos[0]!, fit: BoxFit.cover)
-                        : Container(color: Colors.grey),
+                    width: 46,
+                    height: 34,
+                    child: photoBytes != null
+                        ? Image.memory(photoBytes, fit: BoxFit.cover)
+                        : Container(
+                            color: AppColors.surfaceMuted,
+                            child: const Icon(
+                              Icons.camera_alt_outlined,
+                              size: 16,
+                              color: AppColors.secondaryText,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(width: 8),
+                // Text 'Pose 1' or 'Pose 2'
                 Text(
-                  'Pose 1 ✓',
+                  label,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11.5,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: AppColors.primaryBlack,
                   ),
                 ),
-                const Spacer(),
-                const Icon(Icons.add, size: 16, color: AppColors.secondaryText),
-                const Spacer(),
-                // Thumb 2
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: SizedBox(
-                    width: 48,
-                    height: 36,
-                    child: _capturedPhotos[1] != null
-                        ? Image.memory(_capturedPhotos[1]!, fit: BoxFit.cover)
-                        : Container(color: Colors.grey),
-                  ),
-                ),
                 const SizedBox(width: 8),
-                Text(
-                  'Pose 2 ✓',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primaryBlack,
+                // Logo take ulang foto (lingkaran tunjuk)
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceMuted,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.border,
+                      width: 1,
+                    ),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.replay_rounded,
+                      size: 15,
+                      color: AppColors.primaryBlack,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReviewPoseControls() {
+    final bool isPose1Review = _reviewingSlotIndex == 0;
+    final bool hasBothPhotos = _slotCount == 2 &&
+        _capturedPhotos.length >= 2 &&
+        _capturedPhotos[0] != null &&
+        _capturedPhotos[1] != null;
+    final bool showDualBar = _slotCount == 2 && (hasBothPhotos || !isPose1Review);
+
+    return Column(
+      children: [
+        // Mini preview of both photos with retake button (replaces old checkmark pill)
+        if (showDualBar) ...[
+          _buildDualPoseBar(),
           const SizedBox(height: 12),
         ],
 
@@ -1371,16 +1452,18 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    isPose1Review
-                        ? Icons.arrow_forward_rounded
-                        : Icons.auto_awesome_rounded,
+                    hasBothPhotos || !isPose1Review
+                        ? Icons.auto_awesome_rounded
+                        : Icons.arrow_forward_rounded,
                     size: 15,
                     color: AppColors.primaryBlack,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  isPose1Review ? 'Lanjut Foto Kedua' : 'Lihat Hasil dengan Frame',
+                  hasBothPhotos || !isPose1Review
+                      ? 'Lihat Hasil dengan Frame'
+                      : 'Lanjut Foto Kedua',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -1866,69 +1949,9 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
         ),
         const SizedBox(height: 10),
 
-        // 3. Multi-slot individual retake chips (if 2 photos)
+        // 3. Multi-slot individual retake bar with thumbnails and retake buttons (if 2 photos)
         if (_slotCount == 2) ...[
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.white,
-                    foregroundColor: AppColors.primaryBlack,
-                    side: const BorderSide(color: AppColors.border, width: 1.2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onPressed: () => _retakePoseFromFinalResult(0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.replay_rounded, size: 15),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Ulangi Foto 1',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.white,
-                    foregroundColor: AppColors.primaryBlack,
-                    side: const BorderSide(color: AppColors.border, width: 1.2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onPressed: () => _retakePoseFromFinalResult(1),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.replay_rounded, size: 15),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Ulangi Foto 2',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+          _buildDualPoseBar(),
           const SizedBox(height: 10),
         ],
 
