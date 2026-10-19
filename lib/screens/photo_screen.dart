@@ -1,6 +1,5 @@
-// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
+// ignore_for_file: deprecated_member_use
 import 'dart:async';
-import 'dart:html' as html;
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../utils/camera_helper.dart';
 import '../utils/file_saver.dart';
+import '../utils/image_picker_helper.dart';
 
 enum SessionMode {
   capture, // Live clean camera viewfinder (no frame)
@@ -188,10 +188,10 @@ class _PhotoScreenState extends State<PhotoScreen> {
   }
 
   Future<void> _triggerShutterCapture() async {
-    // 1. Capture frame from webcam
+    // 1. Capture frame from camera
     Uint8List? captured;
     if (_cameraHelper.isInitialized) {
-      captured = _cameraHelper.captureFrame();
+      captured = await _cameraHelper.captureFrame();
     }
 
     // Fallback if camera stream didn't provide bytes (e.g. testing environment)
@@ -345,7 +345,7 @@ class _PhotoScreenState extends State<PhotoScreen> {
       final fileName =
           'mzphotobooth_${widget.frame['id']}_${DateTime.now().millisecondsSinceEpoch}.png';
 
-      FileSaver.saveFile(pngBytes, fileName);
+      await FileSaver.saveFile(pngBytes, fileName);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -430,12 +430,26 @@ class _PhotoScreenState extends State<PhotoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Width constraint: 2-photo & 3-photo vertical strip is compact (420), capture & 1-photo/4-photo frame is wide (540)
-    final double maxContentWidth =
-        _sessionMode == SessionMode.finalResult &&
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+    final isMobileLandscape =
+        isLandscape && MediaQuery.of(context).size.height < 600;
+
+    // Mobile landscape during capture: immersive widescreen camera viewfinder
+    if (isMobileLandscape && _sessionMode == SessionMode.capture) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: _buildMobileLandscapeCaptureView(),
+      );
+    }
+
+    // Width constraint: 2-photo & 3-photo vertical strip is compact (420), capture & 1-photo/4-photo frame is wide (540), landscape is wider (720)
+    final double maxContentWidth = isLandscape
+        ? 720
+        : (_sessionMode == SessionMode.finalResult &&
                 (_slotCount == 2 || _slotCount == 3)
             ? 420
-            : 540;
+            : 540);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -710,73 +724,7 @@ class _PhotoScreenState extends State<PhotoScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: AspectRatio(
               aspectRatio: cameraAspectRatio,
-              child: GestureDetector(
-                onTap: !_isCountingDown ? _startCountdown : null,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    color: const Color(0xFF0F0F12),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // Layer 1: Live Webcam Stream (Persistent Platform View)
-                        if (_cameraHelper.isInitialized)
-                          HtmlElementView(
-                            key: const ValueKey('live-camera-persistent-view'),
-                            viewType: _cameraHelper.viewType,
-                            onPlatformViewCreated: (_) {
-                              _cameraHelper.resumeCamera();
-                            },
-                          )
-                        else
-                          _buildCameraLoadingOrError(),
-
-                        // Layer 2: Viewfinder Camera HUD Guides (No "foto bersih" pill)
-                        _buildViewfinderHUD(),
-
-                        // Layer 3: Countdown Number Only (Clean & Unobtrusive, No circle, No pop-up, No dark curtain)
-                        if (_isCountingDown)
-                          Positioned.fill(
-                            child: IgnorePointer(
-                              child: Center(
-                                child: Text(
-                                  '$_countdownNumber',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 68,
-                                    fontWeight: FontWeight.w900,
-                                    color: AppColors.secondaryLime,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black.withValues(alpha: 0.75),
-                                        offset: const Offset(0, 4),
-                                        blurRadius: 18,
-                                      ),
-                                      Shadow(
-                                        color: Colors.black.withValues(alpha: 0.9),
-                                        offset: const Offset(0, 1),
-                                        blurRadius: 5,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                        // Layer 4: Shutter Flash
-                        if (_showFlash)
-                          Positioned.fill(
-                            child: AnimatedOpacity(
-                              duration: const Duration(milliseconds: 150),
-                              opacity: _showFlash ? 1.0 : 0.0,
-                              child: Container(color: Colors.white),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              child: _buildCameraPreviewStack(borderRadius: 16),
             ),
           ),
 
@@ -808,6 +756,278 @@ class _PhotoScreenState extends State<PhotoScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // CAMERA PREVIEW STACK (Shared between portrait and landscape)
+  // --------------------------------------------------------------------------
+  Widget _buildCameraPreviewStack({double borderRadius = 16.0}) {
+    return GestureDetector(
+      onTap: !_isCountingDown ? _startCountdown : null,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: Container(
+          color: const Color(0xFF0F0F12),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Layer 1: Live Camera Stream
+              if (_cameraHelper.isInitialized)
+                _cameraHelper.buildPreview(
+                  key: const ValueKey('live-camera-persistent-view'),
+                )
+              else
+                _buildCameraLoadingOrError(),
+
+              // Layer 2: Viewfinder Camera HUD Guides
+              _buildViewfinderHUD(),
+
+              // Layer 3: Countdown Number
+              if (_isCountingDown)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Center(
+                      child: Text(
+                        '$_countdownNumber',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 68,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.secondaryLime,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.75),
+                              offset: const Offset(0, 4),
+                              blurRadius: 18,
+                            ),
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.9),
+                              offset: const Offset(0, 1),
+                              blurRadius: 5,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Layer 4: Shutter Flash
+              if (_showFlash)
+                Positioned.fill(
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 150),
+                    opacity: _showFlash ? 1.0 : 0.0,
+                    child: Container(color: Colors.white),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // MOBILE WIDESCREEN LANDSCAPE CAMERA VIEW (For phone rotated left/right)
+  // --------------------------------------------------------------------------
+  Widget _buildMobileLandscapeCaptureView() {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        child: Row(
+          children: [
+            // Left: Widescreen Viewfinder (Takes up all horizontal space)
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.border, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _buildCameraPreviewStack(borderRadius: 20),
+
+                    // Top Left Overlay: Back Button + Mode/Pose Chip
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            GestureDetector(
+                              onTap: () => Navigator.of(context).pop(),
+                              child: const Icon(
+                                Icons.arrow_back_ios_new_rounded,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _slotCount > 1
+                                  ? 'POSE ${_activeCaptureSlot + 1} / $_slotCount'
+                                  : 'KAMERA WIDE',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.8,
+                                color: AppColors.secondaryLime,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 14),
+
+            // Right Bar: Controls positioned for thumb accessibility in landscape
+            SizedBox(
+              width: 84,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Switch Camera (Flip)
+                  _buildLandscapeSideButton(
+                    icon: _cameraHelper.isFrontCamera
+                        ? Icons.camera_front_rounded
+                        : Icons.camera_rear_rounded,
+                    label: 'Flip',
+                    onTap: _switchCamera,
+                    isLoading: _isSwitchingCamera,
+                  ),
+
+                  // Large Circular Lime Shutter Button
+                  GestureDetector(
+                    onTap: !_isCountingDown ? _startCountdown : null,
+                    child: Container(
+                      width: 66,
+                      height: 66,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.secondaryLime,
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                AppColors.secondaryLime.withValues(alpha: 0.45),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                        border: Border.all(
+                          color: AppColors.primaryBlack,
+                          width: 3,
+                        ),
+                      ),
+                      child: Center(
+                        child: _isCountingDown
+                            ? Text(
+                                '$_countdownNumber',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.primaryBlack,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.camera_alt_rounded,
+                                color: AppColors.primaryBlack,
+                                size: 28,
+                              ),
+                      ),
+                    ),
+                  ),
+
+                  // Gallery Button
+                  _buildLandscapeSideButton(
+                    icon: Icons.photo_library_outlined,
+                    label: 'Galeri',
+                    onTap: _pickImageFromGallery,
+                    isLoading: false,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLandscapeSideButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required bool isLoading,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.border, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: isLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primaryBlack,
+                      ),
+                    )
+                  : Icon(icon, size: 20, color: AppColors.primaryBlack),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.secondaryText,
             ),
           ),
         ],
@@ -1144,49 +1364,36 @@ class _PhotoScreenState extends State<PhotoScreen> {
     }
   }
 
-  void _pickImageFromGallery() {
-    if (!kIsWeb) return;
+  Future<void> _pickImageFromGallery() async {
     try {
-      final uploadInput = html.FileUploadInputElement()..accept = 'image/*';
-      uploadInput.click();
-      uploadInput.onChange.listen((e) {
-        final files = uploadInput.files;
-        if (files != null && files.isNotEmpty) {
-          final reader = html.FileReader();
-          reader.readAsArrayBuffer(files[0]);
-          reader.onLoadEnd.listen((e) async {
-            if (reader.result == null) return;
-            final bytes = Uint8List.fromList(reader.result as List<int>);
-            if (!mounted) return;
+      final bytes = await ImagePickerHelper.pickImage();
+      if (bytes == null || !mounted) return;
 
-            final croppedBytes = await showDialog<Uint8List>(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => _CropPhotoDialog(
-                imageBytes: bytes,
-                slotIndex: _activeCaptureSlot,
-              ),
-            );
+      final croppedBytes = await showDialog<Uint8List>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => _CropPhotoDialog(
+          imageBytes: bytes,
+          slotIndex: _activeCaptureSlot,
+        ),
+      );
 
-            if (croppedBytes != null && mounted) {
-              setState(() {
-                _capturedPhotos[_activeCaptureSlot] = croppedBytes;
-              });
+      if (croppedBytes != null && mounted) {
+        setState(() {
+          _capturedPhotos[_activeCaptureSlot] = croppedBytes;
+        });
 
-              if (_slotCount == 1) {
-                setState(() {
-                  _sessionMode = SessionMode.finalResult;
-                });
-              } else {
-                setState(() {
-                  _sessionMode = SessionMode.reviewPose;
-                  _reviewingSlotIndex = _activeCaptureSlot;
-                });
-              }
-            }
+        if (_slotCount == 1) {
+          setState(() {
+            _sessionMode = SessionMode.finalResult;
+          });
+        } else {
+          setState(() {
+            _sessionMode = SessionMode.reviewPose;
+            _reviewingSlotIndex = _activeCaptureSlot;
           });
         }
-      });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
