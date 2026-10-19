@@ -384,7 +384,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       number: '1',
       icon: Icons.tune_rounded,
       title: 'Atur dulu',
-      description: 'Pilih orientasi & layout frame 1 atau 2 foto sesuai konsep gayamu.',
+      description: 'Pilih orientasi & layout frame 1, 2, 3, atau 4 foto sesuai konsep gayamu.',
     );
     final step2 = _buildStepCard(
       number: '2',

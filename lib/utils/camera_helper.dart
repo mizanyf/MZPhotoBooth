@@ -11,6 +11,7 @@ class WebCameraHelper {
   late final String viewType;
   bool isInitialized = false;
   bool hasPermissionError = false;
+  bool isFrontCamera = true;
 
   WebCameraHelper() {
     viewType = 'webcam-view-${DateTime.now().microsecondsSinceEpoch}';
@@ -18,8 +19,11 @@ class WebCameraHelper {
 
   bool _factoryRegistered = false;
 
-  Future<bool> startCamera() async {
+  Future<bool> startCamera({bool? frontCamera}) async {
     if (!kIsWeb) return false;
+    if (frontCamera != null) {
+      isFrontCamera = frontCamera;
+    }
     try {
       final mediaDevices = html.window.navigator.mediaDevices;
       if (mediaDevices == null) {
@@ -27,7 +31,28 @@ class WebCameraHelper {
         return false;
       }
 
-      mediaStream = await mediaDevices.getUserMedia({'video': true, 'audio': false});
+      // Stop previous stream tracks if any before requesting camera
+      try {
+        mediaStream?.getTracks().forEach((track) => track.stop());
+      } catch (_) {}
+      mediaStream = null;
+
+      try {
+        mediaStream = await mediaDevices.getUserMedia({
+          'video': {
+            'facingMode': isFrontCamera ? 'user' : 'environment',
+          },
+          'audio': false,
+        });
+      } catch (_) {
+        // Fallback if specific facingMode is not supported on this device/browser
+        mediaStream = await mediaDevices.getUserMedia({
+          'video': true,
+          'audio': false,
+        });
+      }
+
+      final transform = isFrontCamera ? 'scaleX(-1)' : 'scaleX(1)';
 
       if (videoElement == null) {
         videoElement = html.VideoElement()
@@ -38,7 +63,7 @@ class WebCameraHelper {
           ..style.width = '100%'
           ..style.height = '100%'
           ..style.objectFit = 'cover'
-          ..style.transform = 'scaleX(-1)';
+          ..style.transform = transform;
 
         if (!_factoryRegistered) {
           ui_web.platformViewRegistry.registerViewFactory(
@@ -48,7 +73,9 @@ class WebCameraHelper {
           _factoryRegistered = true;
         }
       } else {
-        videoElement!.srcObject = mediaStream;
+        videoElement!
+          ..srcObject = mediaStream
+          ..style.transform = transform;
         await videoElement!.play();
       }
 
@@ -60,6 +87,11 @@ class WebCameraHelper {
       isInitialized = false;
       return false;
     }
+  }
+
+  Future<bool> switchCamera() async {
+    isFrontCamera = !isFrontCamera;
+    return await startCamera();
   }
 
   Future<void> resumeCamera() async {
@@ -77,6 +109,8 @@ class WebCameraHelper {
         if (videoElement!.srcObject != mediaStream) {
           videoElement!.srcObject = mediaStream;
         }
+
+        videoElement!.style.transform = isFrontCamera ? 'scaleX(-1)' : 'scaleX(1)';
 
         if (videoElement!.paused) {
           await videoElement!.play();
@@ -99,9 +133,11 @@ class WebCameraHelper {
         height: videoElement!.videoHeight,
       );
       final ctx = canvas.context2D;
-      // Mirror horizontally to match mirrored live preview
-      ctx.translate(canvas.width!, 0);
-      ctx.scale(-1, 1);
+      if (isFrontCamera) {
+        // Mirror horizontally to match mirrored live preview for front camera
+        ctx.translate(canvas.width!, 0);
+        ctx.scale(-1, 1);
+      }
       ctx.drawImage(videoElement!, 0, 0);
 
       final dataUrl = canvas.toDataUrl('image/jpeg', 0.95);

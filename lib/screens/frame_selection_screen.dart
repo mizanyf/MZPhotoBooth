@@ -12,11 +12,11 @@ class FrameSelectionScreen extends StatefulWidget {
 
 class _FrameSelectionScreenState extends State<FrameSelectionScreen>
     with SingleTickerProviderStateMixin {
-  // Set of expanded category slotCounts. '1' is expanded by default.
-  final Set<String> _expandedSections = {'1'};
+  // Set of expanded category slotCounts. Empty by default so all categories are collapsed.
+  final Set<String> _expandedSections = {};
 
-  // Currently selected frame
-  late Map<String, dynamic> _selectedFrame;
+  // Currently selected frame (null until user selects a frame)
+  Map<String, dynamic>? _selectedFrame;
 
   late final AnimationController _entryController;
   late final Animation<double> _entryAnimation;
@@ -95,83 +95,67 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
       'slotCount': '3',
       'title': 'Frame 3 Foto',
       'subtitle': 'Format vertikal 3 pose favorit photostrip',
-      'badge': 'Segera Hadir',
-      'isReady': false,
+      'badge': '3 Desain Aktif',
+      'isReady': true,
       'icon': Icons.table_rows_rounded,
       'frames': [
         {
           'id': '3-1',
-          'title': 'Triple Strip',
-          'subtitle': 'Photostrip vertikal 3 pose',
-          'asset': '',
+          'title': 'Pink Lily Floral',
+          'subtitle': 'Strip 3 pose vertikal aksen bunga lili soft pink',
+          'asset': 'assets/frame/frame3foto/1.png',
           'slots': '3 Foto',
-          'isAvailable': false,
+          'isAvailable': true,
         },
         {
           'id': '3-2',
-          'title': 'Trio Collage',
-          'subtitle': 'Kolase 3 pose ekspresif',
-          'asset': '',
+          'title': 'Vintage Bow Cream',
+          'subtitle': 'Nuansa krem pastel lembut dengan aksen pita vintage',
+          'asset': 'assets/frame/frame3foto/2.png',
           'slots': '3 Foto',
-          'isAvailable': false,
+          'isAvailable': true,
         },
         {
           'id': '3-3',
-          'title': 'Story Box 3',
-          'subtitle': 'Cerita 3 momen bersambung',
-          'asset': '',
+          'title': 'Lime Cinema Strip',
+          'subtitle': 'Gaya rol film sinematik warna signature lime',
+          'asset': 'assets/frame/frame3foto/3.png',
           'slots': '3 Foto',
-          'isAvailable': false,
-        },
-        {
-          'id': '3-4',
-          'title': 'Cinema 3-Cut',
-          'subtitle': 'Format rol film 3 pose sinematik',
-          'asset': '',
-          'slots': '3 Foto',
-          'isAvailable': false,
+          'isAvailable': true,
         },
       ],
     },
     {
       'slotCount': '4',
       'title': 'Frame 4 Foto',
-      'subtitle': 'Format 4-cut photostrip & 2x2 grid viral',
-      'badge': 'Segera Hadir',
-      'isReady': false,
+      'subtitle': 'Format 2x2 grid viral 4 pose photobooth',
+      'badge': '3 Desain Aktif',
+      'isReady': true,
       'icon': Icons.grid_view_rounded,
       'frames': [
         {
           'id': '4-1',
-          'title': 'Korean 4-Cut',
-          'subtitle': 'Photostrip 4 pose Korea viral',
-          'asset': '',
+          'title': 'Sparkle Lime Grid',
+          'subtitle': 'Grid 2x2 simetris warna lime signature ceria',
+          'asset': 'assets/frame/frame4foto/1.png',
           'slots': '4 Foto',
-          'isAvailable': false,
+          'isAvailable': true,
         },
         {
           'id': '4-2',
-          'title': '2x2 Grid Pop',
-          'subtitle': 'Grid 4 kotak simetris',
-          'asset': '',
+          'title': 'Midnight Studio Grid',
+          'subtitle': 'Grid 2x2 monokrom hitam studio elegan & aksen lime',
+          'asset': 'assets/frame/frame4foto/2.png',
           'slots': '4 Foto',
-          'isAvailable': false,
+          'isAvailable': true,
         },
         {
           'id': '4-3',
-          'title': 'Cinema 4-Strip',
-          'subtitle': 'Gaya rol film sinematik',
-          'asset': '',
+          'title': 'Clean Studio White',
+          'subtitle': 'Grid 2x2 monokrom putih bersih modern & aksen lime',
+          'asset': 'assets/frame/frame4foto/3.png',
           'slots': '4 Foto',
-          'isAvailable': false,
-        },
-        {
-          'id': '4-4',
-          'title': 'Quad Collage',
-          'subtitle': 'Kolase 4 pose playful kekinian',
-          'asset': '',
-          'slots': '4 Foto',
-          'isAvailable': false,
+          'isAvailable': true,
         },
       ],
     },
@@ -180,8 +164,6 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
   @override
   void initState() {
     super.initState();
-    // Default selection is the user-attached Robot frame (first item of Frame 1 Foto)
-    _selectedFrame = (_sections[0]['frames'] as List)[0];
 
     _entryController = AnimationController(
       vsync: this,
@@ -205,13 +187,57 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
       if (_expandedSections.contains(slotCount)) {
         _expandedSections.remove(slotCount);
       } else {
-        _expandedSections.add(slotCount);
+        _expandedSections
+          ..clear()
+          ..add(slotCount);
       }
     });
   }
 
   void _onUseFramePressed() {
-    final isAvailable = _selectedFrame['isAvailable'] as bool? ?? false;
+    if (_selectedFrame == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.primaryBlack,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          content: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: AppColors.secondaryLime,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.info_outline_rounded,
+                  color: AppColors.primaryBlack,
+                  size: 16,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Silakan pilih salah satu frame terlebih dahulu!',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      return;
+    }
+
+    final frame = _selectedFrame!;
+    final isAvailable = frame['isAvailable'] as bool? ?? false;
     if (!isAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -238,7 +264,7 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Aset frame ${_selectedFrame['slots']} belum ditambahkan. Silakan pilih dari koleksi 1 Foto!',
+                  'Aset frame ${frame['slots']} belum ditambahkan. Silakan pilih dari koleksi frame aktif!',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
@@ -255,12 +281,16 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
 
     // Convert to String map for PhotoScreen
     final frameMap = <String, String>{
-      'id': _selectedFrame['id'] as String,
-      'title': _selectedFrame['title'] as String,
-      'subtitle': _selectedFrame['subtitle'] as String,
-      'asset': _selectedFrame['asset'] as String,
-      'slots': _selectedFrame['slots'] as String,
-      'slotCount': (_selectedFrame['slots'] as String).contains('2') ? '2' : '1',
+      'id': frame['id'] as String,
+      'title': frame['title'] as String,
+      'subtitle': frame['subtitle'] as String,
+      'asset': frame['asset'] as String,
+      'slots': frame['slots'] as String,
+      'slotCount': (frame['slots'] as String).contains('4')
+          ? '4'
+          : ((frame['slots'] as String).contains('3')
+              ? '3'
+              : ((frame['slots'] as String).contains('2') ? '2' : '1')),
     };
 
     Navigator.of(context).push(
@@ -424,7 +454,6 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
     final title = section['title'] as String;
     final subtitle = section['subtitle'] as String;
     final isReady = section['isReady'] as bool;
-    final icon = (section['icon'] as IconData?) ?? Icons.crop_original_rounded;
     final frames = section['frames'] as List;
     final isExpanded = _expandedSections.contains(slotCount);
 
@@ -466,7 +495,7 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
                 // Header (Tappable: Click to expand / collapse downwards)
                 Row(
                   children: [
-                    // Icon slot count
+                    // Outline slot icon with empty center
                     Container(
                       width: 42,
                       height: 42,
@@ -478,10 +507,10 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
                                 : AppColors.surfaceMuted),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(
-                        icon,
-                        size: 20,
-                        color: isExpanded
+                      alignment: Alignment.center,
+                      child: _buildSlotCategoryIcon(
+                        slotCount,
+                        isExpanded
                             ? AppColors.secondaryLime
                             : AppColors.primaryBlack,
                       ),
@@ -623,8 +652,9 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
                                                 Expanded(
                                                   child: _buildFrameCard(
                                                     rowFrames[colIdx],
-                                                    _selectedFrame['id'] ==
-                                                        rowFrames[colIdx]['id'],
+                                                    _selectedFrame != null &&
+                                                        _selectedFrame!['id'] ==
+                                                            rowFrames[colIdx]['id'],
                                                   ),
                                                 )
                                               else
@@ -648,6 +678,122 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Custom outline icons with an empty center representing slot count
+  Widget _buildSlotCategoryIcon(String slotCount, Color color, {double scale = 1.0}) {
+    final digit = slotCount.replaceAll(RegExp(r'[^0-9]'), '');
+    Widget iconWidget;
+
+    switch (digit) {
+      case '1':
+        iconWidget = Container(
+          width: 18,
+          height: 18,
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: color, width: 2.0),
+          ),
+        );
+        break;
+      case '2':
+        iconWidget = SizedBox(
+          width: 19,
+          height: 18,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                width: 19,
+                height: 7.5,
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(3),
+                  border: Border.all(color: color, width: 1.8),
+                ),
+              ),
+              Container(
+                width: 19,
+                height: 7.5,
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(3),
+                  border: Border.all(color: color, width: 1.8),
+                ),
+              ),
+            ],
+          ),
+        );
+        break;
+      case '3':
+        iconWidget = SizedBox(
+          width: 19,
+          height: 20,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              for (int i = 0; i < 3; i++)
+                Container(
+                  width: 19,
+                  height: 5.0,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(2),
+                    border: Border.all(color: color, width: 1.6),
+                  ),
+                ),
+            ],
+          ),
+        );
+        break;
+      case '4':
+      default:
+        iconWidget = SizedBox(
+          width: 18.5,
+          height: 18.5,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildOutlineSquare(8.0, color),
+                  _buildOutlineSquare(8.0, color),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildOutlineSquare(8.0, color),
+                  _buildOutlineSquare(8.0, color),
+                ],
+              ),
+            ],
+          ),
+        );
+        break;
+    }
+
+    if (scale != 1.0) {
+      return Transform.scale(
+        scale: scale,
+        child: iconWidget,
+      );
+    }
+    return iconWidget;
+  }
+
+  Widget _buildOutlineSquare(double size, Color color) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(2.5),
+        border: Border.all(color: color, width: 1.6),
       ),
     );
   }
@@ -697,7 +843,11 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
           children: [
             // Frame Preview Thumbnail
             AspectRatio(
-              aspectRatio: slots == '2 Foto' ? (720 / 1170) : (1440 / 1380),
+              aspectRatio: slots == '4 Foto'
+                  ? (1350 / 1170)
+                  : (slots == '3 Foto'
+                      ? (720 / 1650)
+                      : (slots == '2 Foto' ? (720 / 1170) : (1440 / 1380))),
               child: Container(
                 decoration: BoxDecoration(
                   color: isAvailable ? AppColors.surfaceMuted : const Color(0xFFF9F9F9),
@@ -755,16 +905,10 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  slots == '2 Foto'
-                                      ? Icons.view_agenda_outlined
-                                      : (slots == '3 Foto'
-                                          ? Icons.table_rows_outlined
-                                          : (slots == '4 Foto'
-                                              ? Icons.grid_view_rounded
-                                              : Icons.crop_original_rounded)),
-                                  size: 26,
-                                  color: AppColors.secondaryText.withValues(alpha: 0.7),
+                                _buildSlotCategoryIcon(
+                                  slots,
+                                  AppColors.secondaryText.withValues(alpha: 0.7),
+                                  scale: 1.3,
                                 ),
                                 const SizedBox(height: 6),
                                 Container(
@@ -837,9 +981,11 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
   }
 
   Widget _buildBottomActionBar() {
-    final isAvailable = _selectedFrame['isAvailable'] as bool? ?? false;
-    final title = _selectedFrame['title'] as String;
-    final slots = _selectedFrame['slots'] as String;
+    final frame = _selectedFrame;
+    final bool hasSelection = frame != null;
+    final isAvailable = hasSelection && (frame['isAvailable'] as bool? ?? false);
+    final title = hasSelection ? (frame['title'] as String) : '';
+    final slots = hasSelection ? (frame['slots'] as String) : '';
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
@@ -869,22 +1015,28 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
                     width: 7,
                     height: 7,
                     decoration: BoxDecoration(
-                      color: isAvailable ? Colors.green : Colors.orangeAccent,
+                      color: !hasSelection
+                          ? AppColors.secondaryText.withValues(alpha: 0.4)
+                          : (isAvailable ? Colors.green : Colors.orangeAccent),
                       shape: BoxShape.circle,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Pilihan: $title ($slots)',
+                    hasSelection
+                        ? 'Pilihan: $title ($slots)'
+                        : 'Pilih format frame di atas untuk mulai',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.primaryBlack,
+                      color: hasSelection
+                          ? AppColors.primaryBlack
+                          : AppColors.secondaryText,
                     ),
                   ),
                 ],
               ),
-              if (!isAvailable)
+              if (hasSelection && !isAvailable)
                 Text(
                   'Aset belum ada',
                   style: GoogleFonts.plusJakartaSans(
@@ -905,33 +1057,43 @@ class _FrameSelectionScreenState extends State<FrameSelectionScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: isAvailable
                     ? AppColors.primaryBlack
-                    : Colors.grey.shade400,
-                foregroundColor: AppColors.white,
+                    : Colors.grey.shade300,
+                foregroundColor: isAvailable
+                    ? AppColors.white
+                    : AppColors.secondaryText,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 20),
               ),
-              onPressed: _onUseFramePressed,
+              onPressed: isAvailable ? _onUseFramePressed : null,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: isAvailable ? AppColors.secondaryLime : Colors.white24,
+                      color: isAvailable
+                          ? AppColors.secondaryLime
+                          : Colors.black12,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.arrow_forward_rounded,
                       size: 15,
-                      color: isAvailable ? AppColors.primaryBlack : Colors.white,
+                      color: isAvailable
+                          ? AppColors.primaryBlack
+                          : AppColors.secondaryText,
                     ),
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    isAvailable ? 'Gunakan Frame Ini' : 'Frame Belum Ditambahkan',
+                    !hasSelection
+                        ? 'Pilih Frame Terlebih Dahulu'
+                        : (isAvailable
+                            ? 'Gunakan Frame Ini'
+                            : 'Frame Belum Ditambahkan'),
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,

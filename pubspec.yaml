@@ -62,6 +62,8 @@ flutter:
     - assets/frame/
     - assets/frame/frame1foto/
     - assets/frame/frame2foto/
+    - assets/frame/frame3foto/
+    - assets/frame/frame4foto/
     - assets/logo/
     - assets/example/
   # To add assets to your application, add an assets section, like this:
