@@ -548,34 +548,47 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
         _sessionMode == SessionMode.capture || _sessionMode == SessionMode.reviewPose;
     final bool isFinalResult = _sessionMode == SessionMode.finalResult;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          _buildStepItem(
-            stepNumber: '1',
-            title: 'Foto Kamera',
-            isActive: isCaptureOrReview,
-            isCompleted: isFinalResult,
-          ),
-          Expanded(
-            child: Container(
-              height: 2,
-              color: isFinalResult ? AppColors.primaryBlack : AppColors.border,
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.cardShadow,
+              blurRadius: 6,
+              offset: Offset(0, 2),
             ),
-          ),
-          _buildStepItem(
-            stepNumber: '2',
-            title: 'Hasil Frame',
-            isActive: isFinalResult,
-            isCompleted: false,
-          ),
-        ],
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildStepItem(
+              stepNumber: '1',
+              title: 'Foto Kamera',
+              isActive: isCaptureOrReview,
+              isCompleted: isFinalResult,
+            ),
+            Container(
+              width: 32,
+              height: 2,
+              margin: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: isFinalResult ? AppColors.primaryBlack : AppColors.border,
+                borderRadius: BorderRadius.circular(1),
+              ),
+            ),
+            _buildStepItem(
+              stepNumber: '2',
+              title: 'Hasil Frame',
+              isActive: isFinalResult,
+              isCompleted: false,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -984,13 +997,6 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
   }
 
   Widget _buildCaptureControls() {
-    String buttonText;
-    if (_slotCount == 1) {
-      buttonText = 'Ambil Foto (3 Detik)';
-    } else {
-      buttonText = 'Ambil Foto ${_activeCaptureSlot + 1} (3 Detik)';
-    }
-
     return Column(
       children: [
         GestureDetector(
@@ -1037,7 +1043,7 @@ class _PhotoScreenState extends State<PhotoScreen> with TickerProviderStateMixin
               ),
               const SizedBox(height: 10),
               Text(
-                buttonText,
+                'Ambil Foto',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
