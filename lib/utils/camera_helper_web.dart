@@ -13,6 +13,7 @@ class CameraHelper {
   bool isInitialized = false;
   bool hasPermissionError = false;
   bool isFrontCamera = true;
+  bool mirrorFrontCameraCapture = false;
 
   CameraHelper() {
     viewType = 'webcam-view-${DateTime.now().microsecondsSinceEpoch}';
@@ -134,8 +135,8 @@ class CameraHelper {
         height: videoElement!.videoHeight,
       );
       final ctx = canvas.context2D;
-      if (isFrontCamera) {
-        // Mirror horizontally to match mirrored live preview for front camera
+      if (isFrontCamera && mirrorFrontCameraCapture) {
+        // Only mirror horizontally if explicitly enabled
         ctx.translate(canvas.width!, 0);
         ctx.scale(-1, 1);
       }

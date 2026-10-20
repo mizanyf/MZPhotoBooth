@@ -56,9 +56,9 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: "assets/logo/MZP.png"
+  image_path: "assets/logo/MZP.webp"
   adaptive_icon_background: "#111111"
-  adaptive_icon_foreground: "assets/logo/MZP.png"
+  adaptive_icon_foreground: "assets/logo/MZP.webp"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

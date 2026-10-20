@@ -290,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ),
                       child: ClipOval(
                         child: Image.asset(
-                          'assets/logo/MZP.png',
+                          'assets/logo/MZP.webp',
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return const Center(

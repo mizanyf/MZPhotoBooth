@@ -5,6 +5,7 @@ class CameraHelper {
   bool isInitialized = false;
   bool hasPermissionError = false;
   bool isFrontCamera = true;
+  bool mirrorFrontCameraCapture = false;
 
   Future<bool> startCamera({bool? frontCamera}) async => false;
   Future<bool> switchCamera() async => false;
