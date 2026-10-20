@@ -13,7 +13,7 @@ class CameraHelper {
   bool isInitialized = false;
   bool hasPermissionError = false;
   bool isFrontCamera = true;
-  bool mirrorFrontCameraCapture = false;
+  bool mirrorFrontCameraCapture = true;
 
   CameraHelper() {
     viewType = 'webcam-view-${DateTime.now().microsecondsSinceEpoch}';
