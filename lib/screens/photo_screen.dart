@@ -766,7 +766,10 @@ class _PhotoScreenState extends State<PhotoScreen> {
   // --------------------------------------------------------------------------
   // CAMERA PREVIEW STACK (Shared between portrait and landscape)
   // --------------------------------------------------------------------------
-  Widget _buildCameraPreviewStack({double borderRadius = 16.0}) {
+  Widget _buildCameraPreviewStack({
+    double borderRadius = 16.0,
+    bool showTopLeftCornerBracket = true,
+  }) {
     return GestureDetector(
       onTap: !_isCountingDown ? _startCountdown : null,
       child: ClipRRect(
@@ -785,7 +788,9 @@ class _PhotoScreenState extends State<PhotoScreen> {
                 _buildCameraLoadingOrError(),
 
               // Layer 2: Viewfinder Camera HUD Guides
-              _buildViewfinderHUD(),
+              _buildViewfinderHUD(
+                showTopLeftCornerBracket: showTopLeftCornerBracket,
+              ),
 
               // Layer 3: Countdown Number
               if (_isCountingDown)
@@ -859,47 +864,63 @@ class _PhotoScreenState extends State<PhotoScreen> {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    _buildCameraPreviewStack(borderRadius: 20),
+                    _buildCameraPreviewStack(
+                      borderRadius: 20,
+                      showTopLeftCornerBracket: false,
+                    ),
 
-                    // Top Left Overlay: Back Button + Mode/Pose Chip
+                    // Top Left Overlay: Clean Back Button (+ Pose Chip if multi-slot)
                     Positioned(
                       top: 10,
                       left: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            GestureDetector(
-                              onTap: () => Navigator.of(context).pop(),
-                              child: const Icon(
-                                Icons.arrow_back_ios_new_rounded,
-                                color: Colors.white,
-                                size: 14,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () => Navigator.of(context).pop(),
+                            child: Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.6),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                ),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.arrow_back_ios_new_rounded,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
                               ),
                             ),
+                          ),
+                          if (_slotCount > 1) ...[
                             const SizedBox(width: 8),
-                            Text(
-                              _slotCount > 1
-                                  ? 'POSE ${_activeCaptureSlot + 1} / $_slotCount'
-                                  : 'KAMERA WIDE',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.8,
-                                color: AppColors.secondaryLime,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                ),
+                              ),
+                              child: Text(
+                                'POSE ${_activeCaptureSlot + 1} / $_slotCount',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                  color: AppColors.secondaryLime,
+                                ),
                               ),
                             ),
                           ],
-                        ),
+                        ],
                       ),
                     ),
                   ],
@@ -1094,15 +1115,16 @@ class _PhotoScreenState extends State<PhotoScreen> {
     );
   }
 
-  Widget _buildViewfinderHUD() {
+  Widget _buildViewfinderHUD({bool showTopLeftCornerBracket = true}) {
     return Stack(
       children: [
         // Framing Corner Brackets [ ]
-        Positioned(
-          left: 14,
-          top: 14,
-          child: _buildCornerBracket(isTop: true, isLeft: true),
-        ),
+        if (showTopLeftCornerBracket)
+          Positioned(
+            left: 14,
+            top: 14,
+            child: _buildCornerBracket(isTop: true, isLeft: true),
+          ),
         Positioned(
           right: 14,
           top: 14,
