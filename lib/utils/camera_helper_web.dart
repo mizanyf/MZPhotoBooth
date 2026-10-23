@@ -13,7 +13,7 @@ class CameraHelper {
   bool isInitialized = false;
   bool hasPermissionError = false;
   bool isFrontCamera = true;
-  bool mirrorFrontCameraPreview = false;
+  bool mirrorFrontCameraPreview = true;
   bool mirrorFrontCameraCapture = false;
 
   CameraHelper() {
