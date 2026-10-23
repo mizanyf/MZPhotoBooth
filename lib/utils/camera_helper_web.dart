@@ -13,7 +13,8 @@ class CameraHelper {
   bool isInitialized = false;
   bool hasPermissionError = false;
   bool isFrontCamera = true;
-  bool mirrorFrontCameraCapture = true;
+  bool mirrorFrontCameraPreview = false;
+  bool mirrorFrontCameraCapture = false;
 
   CameraHelper() {
     viewType = 'webcam-view-${DateTime.now().microsecondsSinceEpoch}';
@@ -54,7 +55,9 @@ class CameraHelper {
         });
       }
 
-      final transform = isFrontCamera ? 'scaleX(-1)' : 'scaleX(1)';
+      final transform = (isFrontCamera && mirrorFrontCameraPreview)
+          ? 'scaleX(-1)'
+          : 'scaleX(1)';
 
       if (videoElement == null) {
         videoElement = html.VideoElement()
@@ -112,7 +115,10 @@ class CameraHelper {
           videoElement!.srcObject = mediaStream;
         }
 
-        videoElement!.style.transform = isFrontCamera ? 'scaleX(-1)' : 'scaleX(1)';
+        videoElement!.style.transform =
+            (isFrontCamera && mirrorFrontCameraPreview)
+                ? 'scaleX(-1)'
+                : 'scaleX(1)';
 
         if (videoElement!.paused) {
           await videoElement!.play();

@@ -9,7 +9,8 @@ class CameraHelper {
   bool isInitialized = false;
   bool hasPermissionError = false;
   bool isFrontCamera = true;
-  bool mirrorFrontCameraCapture = true;
+  bool mirrorFrontCameraPreview = false;
+  bool mirrorFrontCameraCapture = false;
 
   Future<bool> startCamera({bool? frontCamera}) async {
     if (frontCamera != null) {
@@ -101,6 +102,19 @@ class CameraHelper {
         final double previewAspect =
             isLandscape ? rawAspect : (1.0 / rawAspect);
 
+        Widget previewWidget = CameraPreview(_controller!);
+
+        // On mobile (Android/iOS), Flutter's CameraPreview automatically mirrors
+        // the front camera feed by default. If mirrorFrontCameraPreview is false,
+        // we invert (unmirror) it with Transform so that the preview appears unmirrored.
+        if (isFrontCamera && !mirrorFrontCameraPreview) {
+          previewWidget = Transform.scale(
+            scaleX: -1.0,
+            scaleY: 1.0,
+            child: previewWidget,
+          );
+        }
+
         return ClipRect(
           child: SizedBox(
             width: constraints.maxWidth,
@@ -110,7 +124,7 @@ class CameraHelper {
               child: SizedBox(
                 width: constraints.maxWidth,
                 height: constraints.maxWidth / previewAspect,
-                child: CameraPreview(_controller!),
+                child: previewWidget,
               ),
             ),
           ),
